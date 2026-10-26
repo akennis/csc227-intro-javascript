@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>21 · Node.js — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 21 of 22</div>
+    <h1>21 · Node.js</h1>
+    <p class="lead">JavaScript outside the browser: run scripts from the command line, and write a web server and an API.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-21">✏️ Practice this lesson → Lab 21 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>What Node.js is</h2>
+      <ul>
+        <li><strong>Node.js</strong> is a JavaScript execution environment that runs standalone, without a browser.</li>
+        <li>It's primarily used to develop <strong>web and API servers</strong> programmed in JavaScript (or TypeScript) — the
+        other end of the <code>fetch</code> calls from lesson 19.</li>
+        <li>It can be used for almost any other development task too: command-line tools, build tools, scripts that process
+        files, even desktop apps.</li>
+        <li>It comes with <strong>npm</strong>, the Node Package Manager, and an enormous library of open-source packages at
+        <a href="https://www.npmjs.com/">npmjs.com</a> (more in lesson 22).</li>
+      </ul>
+      <p>The language is the same JavaScript you know. What's different is the environment: there's no <code>document</code>,
+      no <code>window</code>, no page — instead there are modules for files, networking, processes, and the operating
+      system.</p>` },
+
+      { md: `<h2>Running a program</h2>
+      <p>Install Node from <a href="https://nodejs.org/">nodejs.org</a> (the LTS version), then check it from a terminal:</p>
+      <pre class="code" data-lang="text">node --version</pre>
+      <p>Start with a simple "Hello World" program — save this to <code>helloWorld.js</code>:</p>
+      <pre class="code">console.log('Hello World');</pre>
+      <p>Then run it by giving <code>node</code> the path of your file:</p>
+      <pre class="code" data-lang="text">node helloWorld.js</pre>
+      <p>The output appears in the terminal. <code>node</code> on its own starts an interactive prompt (a REPL), much like the
+      browser console.</p>
+      <div class="callout tip"><strong>On this page</strong>, examples can't start a real Node process, so they run in the
+      browser with a small simulation of Node's <code>http</code> and <code>url</code> modules. The code is real Node code — copy
+      it into a file and run it with <code>node</code> and it works the same. Instead of a browser visiting your server, each
+      example lists some <strong>requests</strong>, and the console shows the response to each one (marked →).</div>` },
+      { title: "Hello from \"Node\"", node: true, code: `
+console.log('Hello World');
+console.log("Node version:", process.version);
+console.log("arguments:", process.argv);
+` },
+
+      { md: `<h2>Modules</h2>
+      <p>Node organises code into <strong>modules</strong>. Built-in ones (<code>http</code>, <code>url</code>, <code>fs</code> for
+      files, <code>path</code>, …) and installed packages are loaded with <code>require</code>, which returns the module's
+      exports:</p>
+      <pre class="code">const http = require('http');        // CommonJS style (what this lesson uses)
+import http from 'node:http';         // ES module style (in .mjs files, or with "type": "module")</pre>
+      <p>You can make your own modules too: assign what to share to <code>module.exports</code> in one file, and
+      <code>require('./thatFile')</code> it from another.</p>` },
+
+      { md: `<h2>A minimal web server</h2>
+      <p>Save this to <code>server.js</code> and run <code>node server.js</code>, then visit
+      <code>http://127.0.0.1:3000/</code> in a browser:</p>` },
+      { title: "Hello World server", node: true, requests: ["/", "/anything/at/all"], code: `
+const http = require('http');
+
+const hostname = '127.0.0.1';
+const port = 3000;
+
+function handleRequest(req, res) {
+  res.setHeader('Content-Type', 'text/html');
+  res.statusCode = 200;
+  res.end('Hello World!');
+}
+
+const server = http.createServer(handleRequest);
+
+server.listen(port, hostname, () => {
+  console.log(\`Server running at http://\${hostname}:\${port}/\`);
+});
+` },
+      { md: `<p>How it works:</p>
+      <ul>
+        <li><code>http.createServer(handleRequest)</code> creates a server and gives it your <strong>handler</strong> — a callback,
+        just like an event listener. Node calls it once for <em>every</em> request that arrives.</li>
+        <li><code>server.listen(port, hostname, callback)</code> starts listening on a network <strong>port</strong>; the callback
+        runs once the server is ready. The program then keeps running, waiting for requests, until you press
+        <kbd>Ctrl</kbd>+<kbd>C</kbd>.</li>
+        <li>The handler receives the <strong>request</strong> (<code>req</code>: <code>req.url</code>, <code>req.method</code>,
+        <code>req.headers</code>) and a <strong>response</strong> to fill in (<code>res</code>).</li>
+        <li>Set the status (<code>res.statusCode</code>) and headers (<code>res.setHeader</code>) first, then send the body with
+        <code>res.end(body)</code>. Every request must end with <code>res.end</code>, or the browser waits forever.</li>
+      </ul>
+      <p>Every URL got the same answer, because the handler never looks at <code>req.url</code>. Real servers <strong>route</strong>
+      requests by their path.</p>` },
+
+      { md: `<h2>An HTML and API server</h2>
+      <p>The lecture's full example: <code>/</code> returns an HTML page, <code>/api/echoVal</code> is a tiny JSON
+      <strong>API</strong> that echoes back its <code>val</code> query parameter, and everything else gets a <strong>404</strong>.
+      <code>url.parse(req.url, true)</code> splits the URL into its <code>pathname</code> and a <code>query</code> object.</p>` },
+      { title: "Routing", node: true, requests: ["/", "/api/echoVal?val=hello", "/api/echoVal?val=42", "/nope"], code: `
+const http = require('http');
+const url = require('url');
+
+const hostname = '127.0.0.1';
+const port = 3000;
+
+function rootHandler(req, res, parsedUrl) {
+  const page = \`
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My First Web Server</title>
+  </head>
+  <body>
+    <h1>Hello World</h1>
+    <p>This is my first web server</p>
+  </body>
+</html>\`;
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html');
+  res.end(page);
+}
+
+function echoValApiHandler(req, res, parsedUrl) {
+  const v = parsedUrl.query.val;
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({ val: v }));
+}
+
+function handleRequest(req, res) {
+  const parsedUrl = url.parse(req.url, true);
+  if (parsedUrl.pathname === "/") {
+    rootHandler(req, res, parsedUrl);
+  } else if (parsedUrl.pathname === "/api/echoVal") {
+    echoValApiHandler(req, res, parsedUrl);
+  } else {
+    res.statusCode = 404;
+    res.end('404 Not Found\\n');
+  }
+}
+
+const server = http.createServer(handleRequest);
+server.listen(port, hostname, () => {
+  console.log(\`Server running at http://\${hostname}:\${port}/\`);
+});
+` },
+      { md: `<p>Look at the structure: <code>handleRequest</code> is a <strong>router</strong> that inspects the path and hands off to
+      one small handler per route — top-down design again. An API handler is the server-side twin of a <code>fetch</code> call:
+      the page sends <code>GET /api/echoVal?val=hello</code>, the server answers with JSON, and the page's
+      <code>await resp.json()</code> receives <code>{ val: "hello" }</code>.</p>
+      <div class="callout warn"><strong><code>url.parse</code> is the legacy way.</strong> It still works and you'll see it
+      everywhere, but modern code uses the standard <code>URL</code> class:
+      <code>const u = new URL(req.url, \`http://\${req.headers.host}\`);</code> then <code>u.pathname</code> and
+      <code>u.searchParams.get("val")</code>.</div>` },
+      { title: "A JSON API with the URL class and methods", node: true, requests: ["/api/add?a=2&b=3", "/api/add?a=2", { path: "/api/notes", method: "POST" }, { path: "/api/notes", method: "POST" }, "/api/notes", { path: "/api/notes", method: "DELETE" }], code: `
+const http = require('http');
+
+const notes = [];      // the server's memory: lasts as long as the process runs
+
+function sendJson(res, status, data) {
+  res.statusCode = status;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify(data));
+}
+
+function handleRequest(req, res) {
+  const u = new URL(req.url, \`http://\${req.headers.host}\`);
+
+  if (u.pathname === "/api/add") {
+    const a = u.searchParams.get("a");
+    const b = u.searchParams.get("b");
+    if (a === null || b === null) {
+      return sendJson(res, 400, { error: "a and b are required" });
+    }
+    return sendJson(res, 200, { sum: Number(a) + Number(b) });
+  }
+
+  if (u.pathname === "/api/notes") {
+    if (req.method === "GET") {
+      return sendJson(res, 200, notes);
+    }
+    if (req.method === "POST") {
+      const note = { id: notes.length + 1, text: "note " + (notes.length + 1) };
+      notes.push(note);
+      return sendJson(res, 201, note);
+    }
+    return sendJson(res, 405, { error: "method not allowed" });
+  }
+
+  sendJson(res, 404, { error: "not found" });
+}
+
+http.createServer(handleRequest).listen(3000, '127.0.0.1', () => console.log("API ready"));
+` },
+      { md: `<p>Status codes carry meaning in an API: <strong>201</strong> for "created", <strong>400</strong> when the client sent
+      bad input, <strong>404</strong> for an unknown path, <strong>405</strong> for a method the route doesn't support. A real
+      server would read a POST's body from the request stream, and would save notes to a database or file rather than an
+      array that disappears when the process stops.</p>` },
+
+      { md: `<h2>Other things Node can do</h2>
+      <p>These need a real Node process (they touch your computer's files), so they're shown here to read, not run.</p>
+      <pre class="code">// readNotes.js — read a file, count its lines
+const fs = require('fs');
+const text = fs.readFileSync('notes.txt', 'utf8');
+console.log(text.split('\\n').length + ' lines');
+
+// write one
+fs.writeFileSync('out.txt', 'Hello from Node\\n');
+
+// command-line arguments:  node greet.js Ada
+const name = process.argv[2] ?? 'World';
+console.log(\`Hello, \${name}!\`);</pre>
+      <p>Two habits for working with servers: restart <code>node server.js</code> after every change (or use
+      <code>node --watch server.js</code>, which restarts automatically), and watch the terminal — that's where your server's
+      <code>console.log</code> output and errors go, not the browser console.</p>` },
+
+      { md: `<h2>Challenges</h2>
+      <p>Write the server. The tests send requests to your handler and check the status, content type and body of each
+      response (shown as <code>{status, type, body}</code>).</p>` },
+      { title: "Hello server", node: true, prompt: `Create a server whose handler answers <strong>every</strong> request with status
+        200, <code>Content-Type</code> <code>text/plain</code>, and the body <code>Hello, World!</code>. Make it listen on port
+        3000.`,
+        starter: `const http = require('http');\n\n`,
+        solution: `const http = require('http');\n\nhttp.createServer((req, res) => {\n  res.statusCode = 200;\n  res.setHeader('Content-Type', 'text/plain');\n  res.end('Hello, World!');\n}).listen(3000);`,
+        checks: [{ label: "GET /", run: `return await _t.request("/");` }, { label: "GET /other", run: `return await _t.request("/other");` }] },
+      { title: "Two pages and a 404", node: true, prompt: `Route by <code>req.url</code>: <code>/</code> → 200 HTML
+        <code>&lt;h1&gt;Home&lt;/h1&gt;</code>; <code>/about</code> → 200 HTML <code>&lt;h1&gt;About&lt;/h1&gt;</code>; anything else →
+        404, <code>text/plain</code>, <code>Not Found</code>. (HTML means <code>Content-Type</code> <code>text/html</code>.)`,
+        starter: `const http = require('http');\n\nfunction handleRequest(req, res) {\n\n}\n\nhttp.createServer(handleRequest).listen(3000);`,
+        solution: `const http = require('http');\n\nfunction send(res, status, type, body) {\n  res.statusCode = status;\n  res.setHeader('Content-Type', type);\n  res.end(body);\n}\n\nfunction handleRequest(req, res) {\n  if (req.url === "/") {\n    send(res, 200, 'text/html', '<h1>Home</h1>');\n  } else if (req.url === "/about") {\n    send(res, 200, 'text/html', '<h1>About</h1>');\n  } else {\n    send(res, 404, 'text/plain', 'Not Found');\n  }\n}\n\nhttp.createServer(handleRequest).listen(3000);`,
+        checks: [{ label: "GET /", run: `return await _t.request("/");` }, { label: "GET /about", run: `return await _t.request("/about");` }, { label: "GET /contact", run: `return await _t.request("/contact");` }] },
+      { title: "Greeting API", node: true, prompt: `<code>/api/greet?name=Ada</code> answers 200 with JSON
+        <code>{"message":"Hello, Ada!"}</code> (<code>Content-Type</code> <code>application/json</code>). Without a
+        <code>name</code>, greet <code>World</code>. Any other path: 404 JSON <code>{"error":"not found"}</code>.`,
+        starter: `const http = require('http');\nconst url = require('url');\n\n`,
+        solution: `const http = require('http');\nconst url = require('url');\n\nfunction sendJson(res, status, data) {\n  res.statusCode = status;\n  res.setHeader('Content-Type', 'application/json');\n  res.end(JSON.stringify(data));\n}\n\nhttp.createServer((req, res) => {\n  const parsed = url.parse(req.url, true);\n  if (parsed.pathname === "/api/greet") {\n    sendJson(res, 200, { message: "Hello, " + (parsed.query.name || "World") + "!" });\n  } else {\n    sendJson(res, 404, { error: "not found" });\n  }\n}).listen(3000);`,
+        checks: [{ label: "?name=Ada", run: `return await _t.request("/api/greet?name=Ada");` }, { label: "no name", run: `return await _t.request("/api/greet");` }, { label: "/api/nope", run: `return await _t.request("/api/nope");` }] },
+      { title: "Calculator API", node: true, prompt: `<code>/api/calc?op=add&amp;a=2&amp;b=3</code> answers
+        <code>{"result":5}</code>. Support <code>op</code> = <code>add</code>, <code>sub</code>, <code>mul</code>, <code>div</code>.
+        Respond 400 <code>{"error":"bad request"}</code> if <code>a</code> or <code>b</code> is missing or not a number, or the
+        <code>op</code> is unknown; and 400 <code>{"error":"division by zero"}</code> for <code>div</code> with <code>b=0</code>. All
+        responses are JSON.`,
+        starter: `const http = require('http');\n\n`,
+        solution: `const http = require('http');\n\nconst OPS = {\n  add: (a, b) => a + b,\n  sub: (a, b) => a - b,\n  mul: (a, b) => a * b,\n  div: (a, b) => a / b,\n};\n\nfunction sendJson(res, status, data) {\n  res.statusCode = status;\n  res.setHeader('Content-Type', 'application/json');\n  res.end(JSON.stringify(data));\n}\n\nhttp.createServer((req, res) => {\n  const u = new URL(req.url, \`http://\${req.headers.host}\`);\n  const op = u.searchParams.get("op");\n  const aText = u.searchParams.get("a");\n  const bText = u.searchParams.get("b");\n  const a = Number(aText);\n  const b = Number(bText);\n  if (u.pathname !== "/api/calc" || !(op in OPS) || aText === null || bText === null || Number.isNaN(a) || Number.isNaN(b)) {\n    return sendJson(res, 400, { error: "bad request" });\n  }\n  if (op === "div" && b === 0) {\n    return sendJson(res, 400, { error: "division by zero" });\n  }\n  sendJson(res, 200, { result: OPS[op](a, b) });\n}).listen(3000);`,
+        checks: [
+          { label: "add 2 3", run: `return await _t.request("/api/calc?op=add&a=2&b=3");` },
+          { label: "div 7 2", run: `return await _t.request("/api/calc?op=div&a=7&b=2");` },
+          { label: "div by 0", run: `return await _t.request("/api/calc?op=div&a=1&b=0");` },
+          { label: "missing b", run: `return await _t.request("/api/calc?op=mul&a=4");` },
+          { label: "unknown op", run: `return await _t.request("/api/calc?op=pow&a=2&b=3");` },
+        ] },
+      { title: "A counter API", node: true, prompt: `Keep a count in a variable on the server, starting at 0.
+        <code>GET /count</code> → 200 <code>{"count":N}</code>; <code>POST /count</code> adds one and answers 201 with the new
+        <code>{"count":N}</code>; <code>DELETE /count</code> resets it to 0 and answers 200 <code>{"count":0}</code>; any other
+        method on <code>/count</code> → 405 <code>{"error":"method not allowed"}</code>. All JSON.`,
+        starter: `const http = require('http');\n\nlet count = 0;\n\n`,
+        solution: `const http = require('http');\n\nlet count = 0;\n\nfunction sendJson(res, status, data) {\n  res.statusCode = status;\n  res.setHeader('Content-Type', 'application/json');\n  res.end(JSON.stringify(data));\n}\n\nhttp.createServer((req, res) => {\n  if (req.url !== "/count") {\n    return sendJson(res, 404, { error: "not found" });\n  }\n  if (req.method === "GET") {\n    sendJson(res, 200, { count });\n  } else if (req.method === "POST") {\n    count++;\n    sendJson(res, 201, { count });\n  } else if (req.method === "DELETE") {\n    count = 0;\n    sendJson(res, 200, { count });\n  } else {\n    sendJson(res, 405, { error: "method not allowed" });\n  }\n}).listen(3000);`,
+        checks: [
+          { label: "GET", run: `return await _t.request("/count");` },
+          { label: "POST, POST, GET", run: `await _t.request("/count", { method: "POST" }); const second = await _t.request("/count", { method: "POST" }); return [second, await _t.request("/count")];` },
+          { label: "DELETE, then PUT", run: `return [await _t.request("/count", { method: "DELETE" }), await _t.request("/count", { method: "PUT" })];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Node runs JavaScript outside the browser: <code>node file.js</code>. No DOM; built-in modules instead.</li>
+        <li>Load modules with <code>require('name')</code> (or <code>import</code> in ES modules).</li>
+        <li><code>http.createServer(handler).listen(port, host, cb)</code>; the handler runs per request with <code>(req, res)</code>.</li>
+        <li>Set <code>res.statusCode</code> and headers, then always finish with <code>res.end(body)</code>.</li>
+        <li>Route on the path (<code>url.parse(req.url, true)</code> or <code>new URL(…)</code>) and method; answer APIs with JSON and meaningful status codes.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

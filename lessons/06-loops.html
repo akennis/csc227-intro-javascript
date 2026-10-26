@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>06 · Loops — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 6 of 22</div>
+    <h1>06 · Loops</h1>
+    <p class="lead">Repeat work with <code>while</code> and <code>for</code>, build results step by step, nest loops — and keep your variables local.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-06">✏️ Practice this lesson → Lab 06 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>while: repeat while a condition holds</h2>
+      <p>A <code>while</code> loop repeats its block <strong>zero or more times</strong>, as long as its condition is
+      true — in other words, until the condition becomes false. The condition is checked <em>before</em> each pass,
+      so if it's false at the start, the body never runs.</p>
+      <pre class="code">while (frontIsClear()) {
+  move();
+}</pre>` },
+      { title: "Doubling", code: `
+let x = 1;
+while (x < 1024) {
+  x = x * 2;
+  console.log(x);
+}
+console.log("done, x is", x);
+` },
+      { md: `<p>Trace it: <code>x</code> starts at 1; the test <code>1 &lt; 1024</code> is true, so it doubles to 2 and
+      prints; … at 512 it doubles to 1024 and prints; then <code>1024 &lt; 1024</code> is false and the loop ends.
+      Every loop needs something in its body that eventually makes the condition false.</p>` },
+      { title: "A while loop that never runs", code: `
+let fuel = 0;
+while (fuel > 0) {
+  console.log("driving…");
+  fuel--;
+}
+console.log("The loop body ran zero times.");
+` },
+
+      { md: `<h2>Infinite loops</h2>
+      <p>If nothing in the body ever makes the condition false, the loop runs forever. In a normal browser tab, that
+      <strong>freezes the whole page</strong> — JavaScript runs on a single thread, so while your loop spins, nothing
+      else (not even the Stop button) gets a turn. On this site the page detects a runaway loop and stops it for
+      you. Try it:</p>` },
+      { title: "Forgot to update the counter", expectError: true, code: `
+let count = 0;
+while (count < 5) {
+  console.log("count is", count);
+  // count++;   <- the missing line
+}
+` },
+      { md: `<div class="callout warn"><strong>Checklist for every loop.</strong> What makes the condition true at the
+      start? What changes on each pass? Does that change move it towards false? Uncomment <code>count++;</code> above
+      and run it again.</div>` },
+
+      { md: `<h2>for: counting loops</h2>
+      <p>Most loops follow the same pattern — start a counter, test it, update it. The <code>for</code> loop puts all
+      three parts on one line:</p>
+      <pre class="code">for (initialize; condition; update) {
+  body;
+}</pre>
+      <p>The initializer runs once; then condition → body → update repeats until the condition is false. It's most
+      often used to loop a specific number of times.</p>` },
+      { title: "Counting", code: `
+for (let i = 0; i < 10; i++) {
+  console.log(i);
+}
+` },
+      { title: "Other steps", code: `
+for (let x = 0; x < 10; x += 2) {
+  console.log("even:", x);
+}
+for (let n = 5; n > 0; n--) {
+  console.log("countdown:", n);
+}
+console.log("Liftoff!");
+` },
+      { md: `<p>The update can be anything — even a function call. Here a helper finds the next prime, so the loop
+      visits only primes:</p>` },
+      { title: "Looping over primes", code: `
+function isPrime(n) {
+  if (n < 2) {
+    return false;
+  }
+  for (let d = 2; d * d <= n; d++) {
+    if (n % d === 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function nextPrime(n) {
+  let candidate = n + 1;
+  while (!isPrime(candidate)) {
+    candidate++;
+  }
+  return candidate;
+}
+
+for (let n = 2; n < 50; n = nextPrime(n)) {
+  console.log(n);
+}
+` },
+      { md: `<div class="callout warn"><strong>Off-by-one errors.</strong> <code>i &lt; 10</code> runs for 0…9 (ten times);
+      <code>i &lt;= 10</code> runs for 0…10 (eleven times). Starting at 0 with <code>&lt;</code> is the usual idiom. When a loop
+      runs one time too many or too few, check the start value and <code>&lt;</code> versus <code>&lt;=</code> first.</div>
+      <p>The loop variable declared with <code>let</code> in a <code>for</code> belongs to the loop — it doesn't exist
+      after the loop ends.</p>` },
+
+      { md: `<h2>Building results: the accumulator pattern</h2>
+      <p>Very many loops follow one shape: start a result variable <em>before</em> the loop, update it on each pass,
+      use it <em>after</em> the loop. That works for sums, products, counts, maximums, and text.</p>` },
+      { title: "Sum, count, build", code: `
+let sum = 0;
+for (let i = 1; i <= 100; i++) {
+  sum += i;
+}
+console.log("1 + 2 + … + 100 =", sum);
+
+let multiplesOf7 = 0;
+for (let i = 1; i <= 100; i++) {
+  if (i % 7 === 0) {
+    multiplesOf7++;
+  }
+}
+console.log("multiples of 7 up to 100:", multiplesOf7);
+
+let stars = "";
+for (let i = 0; i < 5; i++) {
+  stars += "*";
+}
+console.log(stars);
+` },
+      { title: "Inside a function", code: `
+function factorial(n) {
+  let result = 1;
+  for (let i = 2; i <= n; i++) {
+    result *= i;
+  }
+  return result;
+}
+
+function sumDigits(n) {
+  let total = 0;
+  while (n > 0) {
+    total += n % 10;               // last digit
+    n = Math.floor(n / 10);        // drop the last digit
+  }
+  return total;
+}
+
+console.log(factorial(5), factorial(10));
+console.log(sumDigits(1234), sumDigits(9999));
+` },
+
+      { md: `<h2>break and continue</h2>
+      <p><code>break</code> leaves the loop immediately. <code>continue</code> skips the rest of this pass and moves
+      on to the next one. Use them sparingly — a clear condition is usually easier to read.</p>` },
+      { title: "break and continue", code: `
+for (let i = 1; i <= 10; i++) {
+  if (i % 3 === 0) {
+    continue;          // skip multiples of 3
+  }
+  if (i > 8) {
+    break;             // stop entirely
+  }
+  console.log(i);
+}
+
+// Find the first square number above 200.
+let n = 1;
+while (true) {
+  if (n * n > 200) {
+    break;
+  }
+  n++;
+}
+console.log("first square above 200:", n * n);
+` },
+      { md: `<p>There's also <code>do … while</code>, which checks its condition <em>after</em> the body, so the body
+      always runs at least once:</p>` },
+      { title: "do … while", code: `
+let rolls = 0;
+let roll;
+do {
+  roll = Math.floor(Math.random() * 6) + 1;
+  rolls++;
+  console.log("rolled", roll);
+} while (roll !== 6);
+console.log("got a 6 after", rolls, "roll(s)");
+` },
+
+      { md: `<h2>Nested loops</h2>
+      <p>A loop inside a loop runs its whole inner loop once for <em>each</em> pass of the outer loop, producing
+      every combination. The classic example is a multiplication table:</p>` },
+      { title: "Multiplication table", code: `
+for (let x = 1; x <= 4; x++) {
+  for (let y = 1; y <= 4; y++) {
+    const res = x * y;
+    console.log(x + " * " + y + " = " + res);
+  }
+}
+` },
+      { title: "A grid as text", code: `
+for (let row = 1; row <= 5; row++) {
+  let line = "";
+  for (let col = 1; col <= 5; col++) {
+    line += String(row * col).padStart(4);
+  }
+  console.log(line);
+}
+
+for (let row = 1; row <= 4; row++) {
+  console.log("#".repeat(row));     // a triangle: the inner work depends on row
+}
+` },
+      { md: `<div class="callout warn"><strong>Don't touch the outer counter from the inner loop.</strong> Changing the
+      outer loop's variable inside the inner loop (except in the most unusual situations) makes the loop almost
+      impossible to reason about. Give each loop its own counter with a meaningful name (<code>row</code> and
+      <code>col</code>, not <code>i</code> and <code>i</code>).</div>` },
+
+      { md: `<h2>Locals, not globals</h2>
+      <p>Don't use "global" variables to pass results out of functions; always prefer local variables and
+      <code>return</code>. A global (declared outside every function) can be changed by any code anywhere, so when it
+      has the wrong value, any line in the program could be to blame.</p>` },
+      { title: "Global (avoid)", code: `
+let res = 0;
+function squareNum(x) {
+  res = x * x;          // changes a variable outside the function
+}
+squareNum(5);
+console.log(res);       // 25 — but only if nothing else touched res
+` },
+      { title: "Local (prefer)", code: `
+function square(x) {
+  const res = x * x;    // lives only inside this call
+  return res;
+}
+const s = square(5);
+console.log(s);         // 25
+console.log(square(6)); // and it's reusable without side effects
+` },
+
+      { md: `<h2>Busy-waiting: a loop that blocks</h2>
+      <p><code>Date.now()</code> returns the number of milliseconds since 1 January 1970. A loop can keep checking it
+      until enough time has passed. That's a <strong>busy wait</strong>: it "sleeps" by spinning as fast as possible,
+      and while it spins, the page can't do anything else. It's fine for a demo of a fraction of a second; for real
+      programs, lesson 19 shows how to wait <em>without</em> blocking.</p>` },
+      { title: "sleep(t)", code: `
+function sleep(t) {
+  console.log("Timer started");
+  const start = Date.now();
+  let checks = 0;
+  while (Date.now() - start < t) {
+    checks++;
+  }
+  console.log("Timer done after " + (Date.now() - start) + " ms and " + checks + " checks");
+}
+
+sleep(500);
+` },
+
+      { md: `<h2>Challenges</h2>
+      <p>For the challenges that print, the tests compare your console output with the expected output exactly.</p>` },
+      { title: "Sum to n", prompt: `Write <code>sumTo(n)</code> returning 1 + 2 + … + n using a loop
+        (<code>sumTo(0)</code> is 0).`,
+        solution: `function sumTo(n) {\n  let total = 0;\n  for (let i = 1; i <= n; i++) {\n    total += i;\n  }\n  return total;\n}`,
+        checks: [{ expr: "sumTo(1)" }, { expr: "sumTo(10)" }, { expr: "sumTo(100)" }, { expr: "sumTo(0)" }] },
+      { title: "Countdown", prompt: `Print <code>10</code> down to <code>1</code>, one number per line, then
+        <code>Liftoff!</code>.`,
+        solution: `for (let i = 10; i >= 1; i--) {\n  console.log(i);\n}\nconsole.log("Liftoff!");`,
+        logs: true, checks: [] },
+      { title: "Powers of two", prompt: `Write <code>powersBelow(limit)</code> that returns how many powers of two
+        (1, 2, 4, 8, …) are less than <code>limit</code>. Use a <code>while</code> loop. <code>powersBelow(10)</code>
+        is 4 (1, 2, 4, 8).`,
+        solution: `function powersBelow(limit) {\n  let count = 0;\n  let p = 1;\n  while (p < limit) {\n    count++;\n    p *= 2;\n  }\n  return count;\n}`,
+        checks: [{ expr: "powersBelow(10)" }, { expr: "powersBelow(1)" }, { expr: "powersBelow(2)" }, { expr: "powersBelow(1025)" }] },
+      { title: "FizzBuzz", prompt: `Print the numbers 1 to 15, but print <code>Fizz</code> instead of multiples of 3,
+        <code>Buzz</code> instead of multiples of 5, and <code>FizzBuzz</code> for multiples of both.`,
+        solution: `for (let i = 1; i <= 15; i++) {\n  if (i % 15 === 0) {\n    console.log("FizzBuzz");\n  } else if (i % 3 === 0) {\n    console.log("Fizz");\n  } else if (i % 5 === 0) {\n    console.log("Buzz");\n  } else {\n    console.log(i);\n  }\n}`,
+        hint: `Test the "both" case first — otherwise 15 is caught by the multiple-of-3 test.`,
+        logs: true, checks: [] },
+      { title: "Count digits", prompt: `Write <code>countDigits(n)</code> for a whole number <code>n &gt;= 0</code>:
+        <code>countDigits(12345)</code> is 5 and <code>countDigits(0)</code> is 1. Use a loop that divides by 10.`,
+        solution: `function countDigits(n) {\n  let count = 1;\n  while (n >= 10) {\n    n = Math.floor(n / 10);\n    count++;\n  }\n  return count;\n}`,
+        checks: [{ expr: "countDigits(12345)" }, { expr: "countDigits(0)" }, { expr: "countDigits(9)" }, { expr: "countDigits(10)" }, { expr: "countDigits(1000000)" }] },
+      { title: "Times table", prompt: `Write <code>timesTable(n)</code> that prints <code>n * 1 = …</code> through
+        <code>n * 5 = …</code>, then call <code>timesTable(3)</code>. (Format: <code>3 * 1 = 3</code>.)`,
+        solution: `function timesTable(n) {\n  for (let i = 1; i <= 5; i++) {\n    console.log(n + " * " + i + " = " + n * i);\n  }\n}\n\ntimesTable(3);`,
+        logs: true, checks: [{ label: "timesTable is a function", expr: "typeof timesTable" }] },
+      { title: "Staircase", prompt: `Write <code>staircase(n)</code> that <strong>returns</strong> (not prints) a
+        string of <code>n</code> lines joined by <code>"\\n"</code>, where line <em>k</em> has <em>k</em> <code>#</code>
+        characters. <code>staircase(3)</code> is <code>"#\\n##\\n###"</code>. Use nested loops or
+        <code>"#".repeat(k)</code>.`,
+        solution: `function staircase(n) {\n  let result = "";\n  for (let k = 1; k <= n; k++) {\n    result += "#".repeat(k);\n    if (k < n) {\n      result += "\\n";\n    }\n  }\n  return result;\n}`,
+        checks: [{ expr: "staircase(1)" }, { expr: "staircase(3)" }, { expr: "staircase(5)" }] },
+      { title: "isPrime", prompt: `Write <code>isPrime(n)</code>: <code>true</code> when <code>n</code> is a prime
+        (a whole number above 1 with no divisors except 1 and itself).`,
+        solution: `function isPrime(n) {\n  if (n < 2) {\n    return false;\n  }\n  for (let d = 2; d * d <= n; d++) {\n    if (n % d === 0) {\n      return false;\n    }\n  }\n  return true;\n}`,
+        hint: `Try every divisor from 2 upwards; return <code>false</code> as soon as one divides evenly. You only need
+        to try divisors up to √n (<code>d * d &lt;= n</code>).`,
+        checks: [{ expr: "isPrime(2)" }, { expr: "isPrime(17)" }, { expr: "isPrime(21)" }, { expr: "isPrime(1)" }, { expr: "isPrime(97)" }, { expr: "isPrime(7919)" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>while (cond) { … }</code> repeats zero or more times; make sure the body moves the condition towards false.</li>
+        <li><code>for (init; cond; update) { … }</code> is the counting loop; mind <code>&lt;</code> versus <code>&lt;=</code>.</li>
+        <li>Accumulator pattern: result before the loop, update inside, use after.</li>
+        <li><code>break</code> leaves a loop; <code>continue</code> skips to the next pass; <code>do…while</code> runs at least once.</li>
+        <li>Nested loops produce combinations; never change the outer counter from the inner loop.</li>
+        <li>Return values from functions instead of writing to globals.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

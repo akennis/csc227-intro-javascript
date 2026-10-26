@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>04 · The Console &amp; the Debugger — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 4 of 22</div>
+    <h1>04 · The Console &amp; the Debugger</h1>
+    <p class="lead">Get instant feedback, read error messages like a detective, and watch a program run one line at a time.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-04">✏️ Practice this lesson → Lab 04 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Two ways to test JavaScript in the browser</h2>
+      <p>Every browser ships with <strong>DevTools</strong>, a set of developer tools. Two of them matter most
+      right now:</p>
+      <ul>
+        <li>the <strong>Console</strong>, where you can type any JavaScript and see it run immediately, and where
+        your program's <code>console.log</code> messages and errors appear; and</li>
+        <li>the <strong>Debugger</strong> (called <em>Sources</em> in Chrome and Edge), which can pause a running
+        program and let you inspect it line by line.</li>
+      </ul>
+      <h3>Try the DevTools console</h3>
+      <ol>
+        <li>Open a new browser tab.</li>
+        <li>Press <kbd>F12</kbd> (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd>; on a Mac <kbd>⌘</kbd>+<kbd>⌥</kbd>+<kbd>I</kbd>)
+        to open DevTools.</li>
+        <li>Click the <strong>Console</strong> tab.</li>
+        <li>Type a line of JavaScript and press <kbd>Enter</kbd>:
+        <pre class="code">console.log("9 * 2 = " + (9 * 2));</pre></li>
+      </ol>
+      <p>The console also <em>evaluates</em> whatever you type: enter <code>9 * 2</code> on its own and it shows
+      <code>18</code>. Use it as a calculator and a scratchpad whenever you wonder "what does this do?"</p>
+      <div class="callout tip"><strong>On this site</strong>, everything an example or challenge logs is shown in the
+      dark console under the code <em>and</em> sent to the real DevTools console. Open DevTools on this page and
+      run the next example to see both.</div>` },
+      { title: "console.log and friends", code: `
+console.log("A plain message");
+console.log("Several values:", 42, true, [1, 2, 3]);
+console.log({ name: "Rover", age: 8 });
+console.warn("A warning — something looks wrong but the program continues");
+console.error("An error message — shown in red");
+const x = 7;
+console.log(\`x is \${x} and x squared is \${x * x}\`);
+` },
+      { md: `<h3>Running your own HTML file</h3>
+      <p>Outside this site, you'll write JavaScript in files. Save this as <code>HelloWorld.html</code>, open it in a
+      browser tab (double-click it or drag it into the browser), press <kbd>F12</kbd>, and look at the Console:</p>
+      <pre class="code" data-lang="html">&lt;html&gt;
+&lt;body&gt;
+&lt;script&gt;
+  let msg = 'hello world';
+  console.log(msg);
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      <p>The page itself is blank — the message only appears in the console. Lesson 7 shows how JavaScript and HTML
+      fit together properly.</p>` },
+
+      { md: `<h2>Reading error messages</h2>
+      <p>When JavaScript can't continue, it <strong>throws</strong> an error: the program stops and the console
+      shows the error's <strong>type</strong>, a <strong>message</strong>, and <strong>where</strong> it happened. Learn
+      the common types — each one points to a different kind of mistake.</p>
+      <table>
+        <tr><th>Error type</th><th>Usually means</th></tr>
+        <tr><td><code>SyntaxError</code></td><td>The code isn't valid JavaScript: a missing bracket, quote, or comma. Nothing runs at all.</td></tr>
+        <tr><td><code>ReferenceError</code></td><td>A name that doesn't exist: a typo, wrong capitalisation, or a variable used outside its scope.</td></tr>
+        <tr><td><code>TypeError</code></td><td>Using a value the wrong way: calling something that isn't a function, reading a property of <code>undefined</code>, reassigning a <code>const</code>.</td></tr>
+        <tr><td><code>RangeError</code></td><td>A value outside what's allowed — or, very often, a function that calls itself forever.</td></tr>
+      </table>` },
+      { title: "SyntaxError", expectError: true, code: `
+console.log("this never prints, because the program can't even be read");
+function add(a, b) {
+  return a + b;
+` },
+      { md: `<p>A <code>SyntaxError</code> reports the line and column (here, where JavaScript hit the end of the code
+      while still waiting for a <code>}</code>). The real mistake is often a line or two <em>earlier</em> than where the
+      error is reported — look backwards from it.</p>` },
+      { title: "ReferenceError", expectError: true, code: `
+const userName = "Ada";
+console.log("Hello, " + username);
+` },
+      { title: "TypeError", expectError: true, code: `
+const total = 10;
+console.log(total.toFixed(2));    // fine: numbers have toFixed
+console.log(total.toUpperCase()); // numbers don't have toUpperCase
+` },
+      { title: "RangeError", expectError: true, code: `
+function countDown(n) {
+  console.log(n);
+  return countDown(n - 1);    // never stops: no case where it doesn't call itself
+}
+countDown(3);
+` },
+      { md: `<div class="callout warn"><strong>How to read an error, every time.</strong>
+      (1) Read the type — it narrows down the kind of mistake. (2) Read the message word by word — it usually names
+      the exact variable or property. (3) Go to the line number, and look at that line <em>and the lines just before it</em>.
+      (4) Fix one error, then run again: the next error may be something completely different.</div>
+      <p>Not every bug throws an error. The hardest bugs are programs that run fine but give the wrong answer — a
+      <strong>logic error</strong>. For those, you need to see what the program is actually doing.</p>` },
+
+      { md: `<h2>Print debugging</h2>
+      <p>The simplest way to see inside a program is to log values at key points. Label what you log, so you know
+      which line printed what.</p>` },
+      { title: "Finding a logic error with logs", code: `
+function average(a, b, c) {
+  const sum = a + b + c;
+  console.log("sum:", sum);
+  const result = sum / 3;
+  console.log("result:", result);
+  return result;
+}
+
+// The answer looks wrong. Which step went wrong?
+console.log(average("80", 90, 100));
+` },
+      { md: `<p>The log shows <code>sum: 8090100</code> — the first argument was the <em>string</em>
+      <code>"80"</code>, so <code>+</code> joined text instead of adding. The logs pointed straight at the step where
+      things went wrong. Remove debugging logs when you're done (or they'll clutter your output, and fail tests that
+      compare console output).</p>` },
+
+      { md: `<h2>The debugger</h2>
+      <p>A <strong>debugger</strong> lets you stop a running program at a chosen line — a <strong>breakpoint</strong> —
+      and then look at every variable's current value, and advance one line at a time. Debugging is one of the most
+      important skills a programmer has: it turns "I have no idea why this is wrong" into "I can watch it go wrong".</p>
+      <h3>The controls</h3>
+      <table>
+        <tr><th>Control</th><th>What it does</th></tr>
+        <tr><td><strong>Resume</strong> (▶, <kbd>F8</kbd>)</td><td>Run until the next breakpoint</td></tr>
+        <tr><td><strong>Step over</strong> (<kbd>F10</kbd>)</td><td>Run the current line, then pause on the next one</td></tr>
+        <tr><td><strong>Step into</strong> (<kbd>F11</kbd>)</td><td>If the line calls a function, go inside it and pause on its first line</td></tr>
+        <tr><td><strong>Step out</strong> (<kbd>Shift</kbd>+<kbd>F11</kbd>)</td><td>Finish the current function and pause back in its caller</td></tr>
+      </table>
+      <p>While paused, the <strong>Scope</strong> panel lists every variable and its value, you can hover over a
+      variable in the code to see it, and the Console evaluates expressions <em>in the paused program's scope</em>.
+      The <strong>Call Stack</strong> panel shows which function called which to get here.</p>
+      <h3>Setting a breakpoint</h3>
+      <p>In your own files: open DevTools → <strong>Sources</strong>, open your file, and click a line number. Then
+      reload the page (or do whatever runs that code) and execution stops there. Try it with
+      <code>HelloWorld.html</code>: set a breakpoint on the <code>console.log</code> line and reload.</p>
+      <p>In code, you can also write the statement <code>debugger;</code>. When DevTools is open, execution pauses on
+      that line exactly as if you'd set a breakpoint; when DevTools is closed, it does nothing.</p>` },
+      { title: "Pause inside a click handler", html: `<button id="go">Run the calculation</button>
+<p id="out">Open DevTools first (F12), then click the button.</p>`, code: `
+function subtotal(price, quantity) {
+  return price * quantity;
+}
+
+function withTax(amount) {
+  const rate = 0.08;
+  return amount + amount * rate;
+}
+
+document.getElementById("go").addEventListener("click", () => {
+  const price = 4.5;
+  const quantity = 3;
+  debugger;   // execution pauses here when DevTools is open
+  const before = subtotal(price, quantity);
+  const after = withTax(before);
+  document.getElementById("out").textContent = "Total with tax: " + after.toFixed(2);
+  console.log("before:", before, "after:", after);
+});
+` },
+      { md: `<p>With DevTools open, click the button. Execution stops on <code>debugger;</code>. Now:</p>
+      <ol>
+        <li>Look at the <strong>Scope</strong> panel: <code>price</code> and <code>quantity</code> have values;
+        <code>before</code> and <code>after</code> don't exist yet.</li>
+        <li><strong>Step over</strong> once. <code>before</code> appears with the value 13.5.</li>
+        <li><strong>Step into</strong> the <code>withTax</code> call. You're now inside <code>withTax</code>, and the Call
+        Stack shows how you got there. Step until it returns.</li>
+        <li><strong>Resume</strong>. The page updates.</li>
+      </ol>
+      <p>(The code runs inside a sandboxed page, so in the Sources panel it appears under a frame called
+      <em>about:srcdoc</em>.)</p>` },
+
+      { md: `<h2>A debugging checklist</h2>
+      <ul>
+        <li><strong>Reproduce it.</strong> Find the exact inputs that make it fail.</li>
+        <li><strong>Read the error</strong> (if there is one) carefully, top to bottom.</li>
+        <li><strong>Check your assumptions.</strong> Log or inspect the values you're <em>sure</em> about — that's where
+        bugs hide.</li>
+        <li><strong>Narrow it down.</strong> Is the value right at the start of the function? Halfway? At the end?</li>
+        <li><strong>Change one thing at a time</strong>, and run again after each change.</li>
+        <li><strong>Explain it out loud</strong> — to a friend, or a rubber duck. Saying what each line does often reveals
+        the line that doesn't.</li>
+      </ul>` },
+
+      { md: `<h2>Challenges: fix the bugs</h2>
+      <p>Each of these programs has a bug. Run it, read the error (or the wrong result), and fix it. Log values if
+      it helps — but remove the logs before the final check where the tests compare console output.</p>` },
+      { title: "The missing name", prompt: `<code>greet("Ada")</code> should return <code>"Hello, Ada!"</code>.`,
+        starter: `function greet(name) {\n  return "Hello, " + Name + "!";\n}`,
+        solution: `function greet(name) {\n  return "Hello, " + name + "!";\n}`,
+        checks: [{ expr: `greet("Ada")` }, { expr: `greet("Rover")` }] },
+      { title: "Unbalanced", prompt: `This should define <code>area(w, h)</code>. JavaScript can't even read it.`,
+        starter: `function area(w, h) {\n  return (w * h;\n`,
+        solution: `function area(w, h) {\n  return w * h;\n}`,
+        checks: [{ expr: "area(3, 4)" }, { expr: "area(10, 0.5)" }] },
+      { title: "Wrong kind of plus", prompt: `<code>total(a, b)</code> receives numbers <em>typed by a user</em>,
+        so they arrive as strings. It should return the numeric sum: <code>total("2", "3")</code> is <code>5</code>.`,
+        starter: `function total(a, b) {\n  return a + b;\n}`,
+        solution: `function total(a, b) {\n  return Number(a) + Number(b);\n}`,
+        checks: [{ expr: `total("2", "3")` }, { expr: `total("10", "0.5")` }, { expr: `typeof total("1", "1")` }] },
+      { title: "Lost result", prompt: `<code>perimeter</code> computes the right number but its caller gets
+        <code>undefined</code>. <code>perimeter(3, 4)</code> should be <code>14</code>.`,
+        starter: `function perimeter(w, h) {\n  const p = 2 * (w + h);\n}`,
+        solution: `function perimeter(w, h) {\n  const p = 2 * (w + h);\n  return p;\n}`,
+        checks: [{ expr: "perimeter(3, 4)" }, { expr: "perimeter(1, 1)" }] },
+      { title: "Precedence", prompt: `<code>average(a, b)</code> should return the average of two numbers, but
+        <code>average(4, 6)</code> gives 7.`,
+        starter: `function average(a, b) {\n  return a + b / 2;\n}`,
+        solution: `function average(a, b) {\n  return (a + b) / 2;\n}`,
+        checks: [{ expr: "average(4, 6)" }, { expr: "average(-2, 2)" }, { expr: "average(1, 2)" }] },
+      { title: "Clean output", prompt: `This works, but it was left full of debugging logs. Keep the behaviour
+        and make it print <strong>only</strong> <code>Area: 12</code>.`,
+        starter: `function area(w, h) {\n  console.log("w is", w);\n  console.log("h is", h);\n  const a = w * h;\n  console.log("a is", a);\n  return a;\n}\n\nconsole.log("Area: " + area(3, 4));`,
+        solution: `function area(w, h) {\n  const a = w * h;\n  return a;\n}\n\nconsole.log("Area: " + area(3, 4));`,
+        logs: true, checks: [{ expr: "area(5, 5)" }] },
+      { title: "Three bugs", prompt: `<code>bmi(weightKg, heightCm)</code> should return weight divided by height
+        in <em>metres</em> squared, rounded to one decimal place — <code>bmi(70, 175)</code> is <code>22.9</code>.
+        There are three separate bugs; fix them one at a time.`,
+        starter: `function bmi(weightKg, heightCm) {\n  const heightM = heightCm * 100;\n  const value = weightKg / heightM * heightM;\n  return Math.round(value * 10) / 10\n}\nconsole.log(bmi(70, 175);`,
+        solution: `function bmi(weightKg, heightCm) {\n  const heightM = heightCm / 100;\n  const value = weightKg / (heightM * heightM);\n  return Math.round(value * 10) / 10;\n}\nconsole.log(bmi(70, 175));`,
+        hint: `Start with the SyntaxError on the last line. Then log <code>heightM</code> — is 175 cm really 17500 m?
+        Then check the order of operations in <code>value</code>.`,
+        logs: true, checks: [{ expr: "bmi(70, 175)" }, { expr: "bmi(90, 180)" }, { expr: "bmi(50, 160)" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Open DevTools with <kbd>F12</kbd>. The Console runs code instantly and shows logs and errors.</li>
+        <li><code>console.log</code>, <code>console.warn</code>, <code>console.error</code> — label what you log.</li>
+        <li>Error types point at the kind of mistake: Syntax (can't read it), Reference (no such name), Type (wrong use
+        of a value), Range (out of bounds, or endless recursion).</li>
+        <li>The debugger pauses at a breakpoint or <code>debugger;</code>; step over, step into, step out, resume, and
+        inspect variables in Scope.</li>
+        <li>Debug systematically: reproduce, read, check assumptions, narrow down, change one thing at a time.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

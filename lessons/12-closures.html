@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>12 · Closures — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 12 of 22</div>
+    <h1>12 · Closures: Objects with Behavior</h1>
+    <p class="lead">Bundle data together with the functions that operate on it — and keep that data private.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-12">✏️ Practice this lesson → Lab 12 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>From separate pieces to real objects</h2>
+      <p>In lesson 11 we decomposed systems into related components, initialised a simulation with objects holding their
+      properties, and evolved it with functions. The data and the functions were <em>separate</em> (but related):
+      <code>advanceMotor(m)</code> worked on a motor object passed to it.</p>
+      <p>In true <strong>object-oriented programming</strong>, an object contains <em>both</em> its data and its operations
+      (its <strong>methods</strong>). Here is a real JavaScript object definition for an <strong>accumulator</strong> —
+      something that accumulates values:</p>` },
+      { title: "An accumulator", code: `
+function Acc(start) {
+  // data goes here
+  let v = start;
+
+  // 'methods' go here
+  function add(x) {
+    v += x;
+  }
+  function mul(x) {
+    v *= x;
+  }
+  function get() {
+    return v;
+  }
+
+  // the result of the 'constructor' is the bag of operations, each of
+  // which runs in the closure of the constructor function, giving the
+  // object's data
+  return { add, mul, get };
+}
+
+function main() {
+  const acc1 = Acc(1);
+  const acc2 = Acc(2);
+  console.log(acc1.get());
+  console.log(acc2.get());
+  acc1.add(10);
+  acc2.add(20);
+  console.log(acc1.get());
+  console.log(acc2.get());
+  acc1.mul(3);
+  console.log(acc1.get());
+}
+
+main();
+` },
+      { md: `<p>You "construct" individual objects by calling the constructor function. Each object you create gets
+      <strong>its own data</strong>, independent of every other object: <code>acc1</code> and <code>acc2</code> each have
+      their own <code>v</code>.</p>
+      <h2>What is a closure?</h2>
+      <p>Normally a function's local variables disappear when the function returns. But <code>add</code>,
+      <code>mul</code> and <code>get</code> were created <em>inside</em> <code>Acc</code>, and an inner function keeps
+      access to the variables of the function it was created in — even after that function has returned. That bundle of
+      "function + the variables it can still see" is a <strong>closure</strong>.</p>
+      <ul>
+        <li>Each call to <code>Acc</code> makes a fresh <code>v</code> and fresh inner functions that close over
+        <em>that</em> <code>v</code>.</li>
+        <li><code>{ add, mul, get }</code> is shorthand for <code>{ add: add, mul: mul, get: get }</code>.</li>
+        <li><code>v</code> is <strong>private</strong>: there's no way to reach it except through the methods.</li>
+      </ul>` },
+      { title: "The data really is private", code: `
+function Acc(start) {
+  let v = start;
+  return {
+    add(x) { v += x; },
+    get() { return v; },
+  };
+}
+
+const acc = Acc(5);
+console.log(acc.v);          // undefined: v isn't a property of the object
+acc.v = 1000;                // this just makes a new, unrelated property
+console.log(acc.get());      // still 5
+acc.add(1);
+console.log(acc.get(), acc);
+` },
+      { md: `<p>Notice the shorter way to write methods inside an object literal: <code>add(x) { … }</code> means
+      <code>add: function (x) { … }</code>.</p>
+      <div class="callout tip"><strong>Why bother with privacy?</strong> Because the object controls every change to its
+      own data, it can enforce rules — no negative balances, no withdrawals while frozen, always a log entry. Nobody can
+      break those rules by assigning to a property directly.</div>` },
+
+      { md: `<h2>Enforcing rules</h2>` },
+      { title: "A bank account", code: `
+function Account(owner, opening = 0) {
+  let balance = opening;
+  const history = [];
+
+  function deposit(amount) {
+    if (amount <= 0) {
+      return false;
+    }
+    balance += amount;
+    history.push("+" + amount);
+    return true;
+  }
+
+  function withdraw(amount) {
+    if (amount <= 0 || amount > balance) {
+      history.push("declined " + amount);
+      return false;
+    }
+    balance -= amount;
+    history.push("-" + amount);
+    return true;
+  }
+
+  return {
+    owner,
+    deposit,
+    withdraw,
+    getBalance: () => balance,
+    getHistory: () => [...history],     // a copy, so callers can't edit ours
+  };
+}
+
+const a = Account("Ada", 100);
+a.deposit(50);
+a.withdraw(500);
+a.withdraw(30);
+console.log(a.owner, a.getBalance(), a.getHistory());
+a.getHistory().push("hacked");
+console.log(a.getHistory());
+` },
+
+      { md: `<h2>Function factories</h2>
+      <p>A closure doesn't have to return an object — a function that returns a <em>function</em> is a <strong>factory</strong>
+      that makes customised functions.</p>` },
+      { title: "makeMultiplier and makeCounter", code: `
+function makeMultiplier(factor) {
+  return function (x) {
+    return x * factor;
+  };
+}
+
+const double = makeMultiplier(2);
+const triple = makeMultiplier(3);
+console.log(double(10), triple(10));
+console.log([1, 2, 3].map(triple));
+
+function makeCounter() {
+  let count = 0;
+  return () => {
+    count++;
+    return count;
+  };
+}
+
+const nextTicket = makeCounter();
+const nextOrder = makeCounter();
+console.log(nextTicket(), nextTicket(), nextTicket());
+console.log(nextOrder());   // its own count
+` },
+
+      { md: `<h2>Chaining</h2>
+      <p>If every method returns the object itself, calls can be chained.</p>` },
+      { title: "Chainable accumulator", code: `
+function Acc(start = 0) {
+  let v = start;
+  const self = {
+    add(x) { v += x; return self; },
+    sub(x) { v -= x; return self; },
+    mul(x) { v *= x; return self; },
+    get() { return v; },
+  };
+  return self;
+}
+
+console.log(Acc(2).add(3).mul(4).sub(1).get());   // ((2 + 3) * 4) - 1
+` },
+
+      { md: `<h2>Closures in the page</h2>
+      <p>Closures shine with the page: a constructor can wire up a widget and keep that widget's state privately, so two
+      copies on one page never interfere.</p>` },
+      { title: "Two independent counters", html: `<div><button id="a-btn">Count A</button> <span id="a-out">0</span></div>
+<div><button id="b-btn">Count B</button> <span id="b-out">0</span></div>`, code: `
+function Clicker(buttonId, outputId) {
+  let clicks = 0;
+  const out = document.getElementById(outputId);
+  document.getElementById(buttonId).addEventListener("click", () => {
+    clicks++;
+    out.textContent = clicks;
+  });
+  return { getClicks: () => clicks };
+}
+
+const a = Clicker("a-btn", "a-out");
+const b = Clicker("b-btn", "b-out");
+console.log("click the buttons, then re-run to see the counts start over");
+` },
+
+      { md: `<h2>Other ways to write objects</h2>
+      <p>You'll meet two other styles in JavaScript code. An object literal can use <code>this</code> to reach its own
+      properties, and the <code>class</code> keyword is a more formal way to write a constructor (called with
+      <code>new</code>). The idea is the same — data plus methods — but the data is an ordinary, public property unless
+      you mark it private with <code>#</code>.</p>` },
+      { title: "this and class", code: `
+const counter = {
+  count: 0,
+  increment() {
+    this.count++;          // "this" is the object the method was called on
+    return this.count;
+  },
+};
+counter.increment();
+console.log(counter.increment(), counter.count);
+
+class Accumulator {
+  #v;                      // a private field
+  constructor(start) {
+    this.#v = start;
+  }
+  add(x) {
+    this.#v += x;
+  }
+  get() {
+    return this.#v;
+  }
+}
+const acc = new Accumulator(10);
+acc.add(5);
+console.log(acc.get());
+` },
+      { md: `<div class="callout warn"><strong>Common mistakes.</strong> Forgetting to <em>call</em> the constructor
+      (<code>const acc = Acc;</code> instead of <code>Acc(1)</code>), so <code>acc.add</code> is undefined. Declaring the
+      state <em>outside</em> the constructor, so every object shares one variable. And in the <code>this</code> style,
+      passing a method as a callback (<code>button.onclick = counter.increment</code>) loses <code>this</code> — one
+      reason the closure style is easier to get right.</div>` },
+      { title: "Shared state by accident", code: `
+let sharedCount = 0;          // outside: ONE variable for every counter
+function BadCounter() {
+  return { inc: () => ++sharedCount };
+}
+const c1 = BadCounter();
+const c2 = BadCounter();
+c1.inc(); c1.inc();
+console.log(c2.inc());        // 3, not 1 — c2 sees c1's clicks
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Counter object", prompt: `Write <code>Counter()</code> returning an object with <code>inc()</code>,
+        <code>dec()</code>, <code>get()</code> and <code>reset()</code>. The count starts at 0 and is private.`,
+        solution: `function Counter() {\n  let count = 0;\n  return {\n    inc() { count++; },\n    dec() { count--; },\n    get() { return count; },\n    reset() { count = 0; },\n  };\n}`,
+        checks: [
+          { label: "inc, inc, dec", run: "const c = Counter(); c.inc(); c.inc(); c.dec(); return c.get();" },
+          { label: "reset", run: "const c = Counter(); c.inc(); c.reset(); return c.get();" },
+          { label: "independent", run: "const a = Counter(); const b = Counter(); a.inc(); return [a.get(), b.get()];" },
+          { label: "count is private", run: "const c = Counter(); return Object.keys(c).sort();" },
+        ] },
+      { title: "Multiplier factory", prompt: `Write <code>makeAdder(n)</code> returning a function that adds
+        <code>n</code> to its argument.`,
+        solution: `function makeAdder(n) {\n  return x => x + n;\n}`,
+        checks: [{ expr: "makeAdder(5)(10)" }, { expr: "[1, 2, 3].map(makeAdder(100))" }, { expr: "typeof makeAdder(1)" }] },
+      { title: "A stack", prompt: `Write <code>Stack()</code> with <code>push(x)</code>, <code>pop()</code> (removes and
+        returns the top, or <code>undefined</code> if empty), <code>peek()</code> (the top without removing it),
+        <code>size()</code> and <code>isEmpty()</code>. Keep the array private.`,
+        solution: `function Stack() {\n  const items = [];\n  return {\n    push(x) { items.push(x); },\n    pop() { return items.pop(); },\n    peek() { return items[items.length - 1]; },\n    size() { return items.length; },\n    isEmpty() { return items.length === 0; },\n  };\n}`,
+        checks: [
+          { label: "push 1 2 3, pop, peek, size", run: "const s = Stack(); s.push(1); s.push(2); s.push(3); return [s.pop(), s.peek(), s.size()];" },
+          { label: "empty stack", run: "const s = Stack(); return [s.isEmpty(), s.pop(), s.size()];" },
+        ] },
+      { title: "Accumulator, extended", prompt: `Extend <code>Acc(start)</code> with <code>sub(x)</code>, <code>div(x)</code>
+        (dividing by 0 must leave the value unchanged), and <code>reset()</code> (back to the <em>starting</em> value).`,
+        starter: `function Acc(start) {\n  let v = start;\n  function add(x) {\n    v += x;\n  }\n  function mul(x) {\n    v *= x;\n  }\n  function get() {\n    return v;\n  }\n  return { add, mul, get };\n}`,
+        solution: `function Acc(start) {\n  let v = start;\n  function add(x) {\n    v += x;\n  }\n  function sub(x) {\n    v -= x;\n  }\n  function mul(x) {\n    v *= x;\n  }\n  function div(x) {\n    if (x !== 0) {\n      v /= x;\n    }\n  }\n  function reset() {\n    v = start;\n  }\n  function get() {\n    return v;\n  }\n  return { add, sub, mul, div, reset, get };\n}`,
+        checks: [
+          { label: "add 10, sub 4, mul 3, div 2", run: "const a = Acc(1); a.add(10); a.sub(4); a.mul(3); a.div(2); return a.get();" },
+          { label: "div by 0", run: "const a = Acc(8); a.div(0); return a.get();" },
+          { label: "reset", run: "const a = Acc(5); a.add(100); a.reset(); return a.get();" },
+        ] },
+      { title: "Rate limiter", prompt: `Write <code>Limiter(max)</code> returning an object with <code>tryUse()</code>,
+        which returns <code>true</code> the first <code>max</code> times it's called and <code>false</code> after that, and
+        <code>remaining()</code>.`,
+        solution: `function Limiter(max) {\n  let used = 0;\n  return {\n    tryUse() {\n      if (used >= max) {\n        return false;\n      }\n      used++;\n      return true;\n    },\n    remaining() {\n      return max - used;\n    },\n  };\n}`,
+        checks: [{ label: "max 2, used 3 times", run: "const l = Limiter(2); return [l.tryUse(), l.tryUse(), l.tryUse(), l.remaining()];" },
+          { label: "max 0", run: "const l = Limiter(0); return [l.tryUse(), l.remaining()];" }] },
+      { title: "Two like buttons", prompt: `Write <code>LikeButton(buttonId)</code> that makes the button show
+        <code>♡ Like</code> initially, and toggles between <code>♥ Liked</code> and <code>♡ Like</code> on each click. It
+        returns <code>{ isLiked }</code>, a function returning the current state. Then create two:
+        <code>const one = LikeButton("like1");</code> and <code>const two = LikeButton("like2");</code>.`,
+        html: `<button id="like1"></button> <button id="like2"></button>`,
+        starter: `function LikeButton(buttonId) {\n\n}\n\nconst one = LikeButton("like1");\nconst two = LikeButton("like2");`,
+        solution: `function LikeButton(buttonId) {\n  let liked = false;\n  const btn = document.getElementById(buttonId);\n  function render() {\n    btn.textContent = liked ? "♥ Liked" : "♡ Like";\n  }\n  btn.addEventListener("click", () => {\n    liked = !liked;\n    render();\n  });\n  render();\n  return { isLiked: () => liked };\n}\n\nconst one = LikeButton("like1");\nconst two = LikeButton("like2");`,
+        checks: [
+          { label: "initial text", run: `return [_t.text("#like1"), _t.text("#like2")];` },
+          { label: "click the first once", run: `_t.click("#like1"); return [_t.text("#like1"), _t.text("#like2"), one.isLiked(), two.isLiked()];` },
+          { label: "click the first again, the second once", run: `_t.click("#like1"); _t.click("#like2"); return [_t.text("#like1"), _t.text("#like2"), one.isLiked(), two.isLiked()];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>An object can bundle data with its methods; a constructor function builds one per call.</li>
+        <li>Inner functions keep access to their outer function's variables — a <strong>closure</strong> — so each object has its own private state.</li>
+        <li>Return <code>{ add, mul, get }</code> to expose methods; anything not returned stays private.</li>
+        <li>Methods enforce the rules for changing the data. Return copies of internal arrays.</li>
+        <li>Factories return customised functions; chainable methods return the object.</li>
+        <li><code>this</code>-style literals and <code>class</code> are other ways to write objects.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

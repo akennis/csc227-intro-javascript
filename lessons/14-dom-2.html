@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>14 · The DOM II — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 14 of 22</div>
+    <h1>14 · The DOM II: Building &amp; Navigating the Tree</h1>
+    <p class="lead">Create, insert, move, copy and remove nodes; build whole pages from data; walk the tree; and work with the browser's rendering.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-14">✏️ Practice this lesson → Lab 14 (4 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Changing the shape of the tree</h2>
+      <p>In DOM I you found existing elements and changed their content and attributes. Now we change the tree's
+      <em>structure</em>: add new nodes, move them, copy them, and take them away. Together with reading and updating, these are
+      the classic <strong>CRUD</strong> operations — create, read, update, delete — applied to a page.</p>
+      <p>Creating an element is always two steps:</p>
+      <ol>
+        <li><strong>Create</strong> it with <code>document.createElement("tag")</code> and set it up (text, classes, attributes).
+        At this point it exists only in memory — it's not on the page.</li>
+        <li><strong>Attach</strong> it somewhere in the tree. Only then does the browser lay it out and draw it.</li>
+      </ol>` },
+
+      { md: `<h2>Where a new node can go</h2>
+      <table>
+        <tr><th>Call</th><th>Puts the new node…</th></tr>
+        <tr><td><code>parent.append(node, …)</code></td><td>as the parent's last child (also accepts strings, which become text)</td></tr>
+        <tr><td><code>parent.prepend(node, …)</code></td><td>as the parent's first child</td></tr>
+        <tr><td><code>el.before(node)</code> / <code>el.after(node)</code></td><td>just before / after <code>el</code>, as its sibling</td></tr>
+        <tr><td><code>el.replaceWith(node)</code></td><td>in place of <code>el</code></td></tr>
+        <tr><td><code>el.insertAdjacentHTML(pos, html)</code></td><td>parsed HTML at <code>"beforebegin"</code>, <code>"afterbegin"</code>, <code>"beforeend"</code> or <code>"afterend"</code></td></tr>
+        <tr><td><code>parent.appendChild(node)</code></td><td>the older form of <code>append</code> (one node, no strings) — you'll see it in older code</td></tr>
+      </table>` },
+      { title: "Every insertion position", html: `<style>.new { color: darkgreen; font-weight: bold; }</style>
+<ul id="list">
+  <li id="middle">existing item</li>
+</ul>`, code: `
+function make(text) {
+  const li = document.createElement("li");
+  li.textContent = text;
+  li.className = "new";
+  return li;
+}
+
+const list = document.getElementById("list");
+const middle = document.getElementById("middle");
+
+list.append(make("append → last child"));
+list.prepend(make("prepend → first child"));
+middle.before(make("before → just above 'existing'"));
+middle.after(make("after → just below 'existing'"));
+list.insertAdjacentHTML("beforeend", '<li class="new">insertAdjacentHTML("beforeend")</li>');
+
+console.log([...list.children].map(li => li.textContent));
+` },
+      { title: "Text nodes and mixed content", html: `<p id="p"></p>`, code: `
+const p = document.getElementById("p");
+const strong = document.createElement("strong");
+strong.textContent = "Ada";
+p.append("Welcome back, ", strong, "! You have ", String(3), " new messages.");
+
+console.log(p.childNodes.length, "child nodes:", [...p.childNodes].map(n => n.nodeName));
+console.log(p.innerHTML);
+
+const extra = document.createTextNode(" (updated just now)");
+p.append(extra);
+extra.textContent = " (updated a moment ago)";   // a text node can be changed later
+` },
+
+      { md: `<h2>Moving and copying</h2>
+      <p>A node can only be in one place. Appending a node that's <em>already</em> on the page doesn't copy it — it
+      <strong>moves</strong> it. To copy, <strong>clone</strong> it: <code>el.cloneNode(true)</code> copies it with all its
+      descendants (<code>false</code> copies just the element). Clones don't bring event listeners along.</p>` },
+      { title: "Moving between lists", html: `<style>.box { display: inline-block; vertical-align: top; width: 45%; } li { cursor: pointer; }</style>
+<div class="box"><h4>To do</h4><ul id="todo"><li>Read chapter</li><li>Write lab</li><li>Open PR</li></ul></div>
+<div class="box"><h4>Done</h4><ul id="done"></ul></div>`, code: `
+const todo = document.getElementById("todo");
+const done = document.getElementById("done");
+
+// Clicking an item moves it to the other list: append moves, it doesn't copy.
+for (const li of document.querySelectorAll("li")) {
+  li.addEventListener("click", () => {
+    const target = li.parentElement === todo ? done : todo;
+    target.append(li);
+    console.log("todo:", todo.children.length, "| done:", done.children.length);
+  });
+}
+console.log("click the items");
+` },
+      { title: "Cloning", html: `<ul id="list"><li class="item"><b>Item</b> <small>(original)</small></li></ul>`, code: `
+const list = document.getElementById("list");
+const original = list.querySelector(".item");
+
+const deep = original.cloneNode(true);
+deep.querySelector("small").textContent = "(deep clone)";
+list.append(deep);
+
+const shallow = original.cloneNode(false);
+shallow.textContent = "shallow clone: just the <li>, no children";
+list.append(shallow);
+
+console.log(list.children.length, "items");
+console.log(original === deep, original.isEqualNode(original.cloneNode(true)));
+` },
+      { md: `<h3>&lt;template&gt;: HTML you clone on demand</h3>
+      <p>A <code>&lt;template&gt;</code> element holds markup that the browser parses but never shows. Its <code>.content</code> is
+      a ready-made piece of DOM you can clone, fill in, and attach — as many times as you like. It keeps the structure in HTML,
+      where it's easy to read, and the data in JavaScript.</p>` },
+      { title: "Cards from a template", html: `<template id="card-template">
+  <div class="card" style="border:1px solid #ccc;border-radius:8px;padding:.4rem .8rem;margin:.4rem 0">
+    <h4 class="name"></h4>
+    <p class="price"></p>
+  </div>
+</template>
+<div id="cards"></div>`, code: `
+const products = [
+  { name: "Notebook", price: 3.49 },
+  { name: "Pen <deluxe>", price: 1.25 },
+  { name: "Backpack", price: 24.99 },
+];
+
+const template = document.getElementById("card-template");
+for (const p of products) {
+  const card = template.content.cloneNode(true);       // a copy of the template's contents
+  card.querySelector(".name").textContent = p.name;    // textContent: "<deluxe>" stays text
+  card.querySelector(".price").textContent = "$" + p.price.toFixed(2);
+  document.getElementById("cards").append(card);
+}
+console.log(document.querySelectorAll("#cards .card").length, "cards");
+` },
+
+      { md: `<h2>Deleting</h2>
+      <p><code>el.remove()</code> takes an element out of the tree (together with everything inside it).
+      <code>parent.replaceChildren()</code> removes all of a parent's children at once, and
+      <code>parent.replaceChildren(a, b)</code> swaps in new ones. A removed element still exists as an object while your code holds
+      a reference to it — you could attach it again.</p>` },
+      { title: "Create, Read, Update, Delete", html: `<ul id="list"><li>First</li></ul>
+<button onclick="addItem()">Add</button>
+<button onclick="removeLast()">Remove last</button>
+<button onclick="clearAll()">Clear</button>`, code: `
+let count = 1;
+
+function addItem() {
+  count++;
+  const li = document.createElement("li");   // create
+  li.textContent = "Item " + count;          // update
+  document.getElementById("list").append(li);
+  console.log("items now:", document.querySelectorAll("#list li").length);   // read
+}
+
+function removeLast() {
+  const last = document.querySelector("#list li:last-child");
+  if (last) {
+    last.remove();                            // delete
+  }
+}
+
+function clearAll() {
+  document.getElementById("list").replaceChildren();   // remove every child
+}
+` },
+
+      { md: `<h2>Building pages from data</h2>
+      <p>Most real pages show <em>data</em> — rows from a database, results from an API. The reliable way to keep the page in step
+      with the data is the <strong>render</strong> pattern:</p>
+      <ol>
+        <li>keep the data (the <strong>state</strong>) in JavaScript variables — arrays and objects;</li>
+        <li>write one <code>render()</code> function that rebuilds the relevant part of the page from the state;</li>
+        <li>whenever the state changes, change the <em>data</em>, then call <code>render()</code>.</li>
+      </ol>
+      <p>You never patch the page by hand in several places, so it can't drift out of sync with the data. (This is exactly the
+      idea React automates in lesson 22.)</p>` },
+      { title: "A table rendered from data", html: `<table border="1" cellpadding="4">
+  <thead><tr><th>Name</th><th>Year</th><th>GPA</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>`, code: `
+const students = [
+  { name: "Ada", year: 2, gpa: 3.9 },
+  { name: "Alan", year: 3, gpa: 3.4 },
+  { name: "Grace", year: 2, gpa: 3.7 },
+];
+
+const tbody = document.getElementById("rows");
+for (const s of students) {
+  const tr = document.createElement("tr");
+  for (const value of [s.name, s.year, s.gpa.toFixed(1)]) {
+    const td = document.createElement("td");
+    td.textContent = value;
+    tr.append(td);
+  }
+  if (s.gpa >= 3.7) {
+    tr.style.background = "#effaf1";
+  }
+  tbody.append(tr);
+}
+console.log("rows:", tbody.children.length);
+` },
+      { title: "State → render()", html: `<input id="name" placeholder="Name"> <input id="score" placeholder="Score" size="5">
+<button id="add">Add</button> <button id="sort">Sort by score</button>
+<ol id="board"></ol>
+<p id="summary"></p>`, code: `
+// 1. the state
+const players = [{ name: "Ada", score: 90 }, { name: "Alan", score: 75 }];
+
+// 2. one function that draws the page from the state
+function render() {
+  const board = document.getElementById("board");
+  board.replaceChildren();
+  players.forEach((p, i) => {
+    const li = document.createElement("li");
+    li.textContent = p.name + " — " + p.score + " ";
+    const del = document.createElement("button");
+    del.textContent = "✕";
+    del.addEventListener("click", () => {
+      players.splice(i, 1);        // change the data…
+      render();                    // …then re-render
+    });
+    li.append(del);
+    board.append(li);
+  });
+  const best = Math.max(...players.map(p => p.score));
+  document.getElementById("summary").textContent =
+    players.length ? players.length + " players, best score " + best : "No players";
+}
+
+// 3. events change the state, then call render()
+document.getElementById("add").addEventListener("click", () => {
+  const name = document.getElementById("name").value.trim();
+  const score = Number(document.getElementById("score").value);
+  if (name && !Number.isNaN(score)) {
+    players.push({ name, score });
+    render();
+  }
+});
+document.getElementById("sort").addEventListener("click", () => {
+  players.sort((a, b) => b.score - a.score);
+  render();
+});
+
+render();
+` },
+      { md: `<div class="callout warn"><strong>Rebuilding with innerHTML throws work away.</strong> Setting <code>innerHTML</code>
+      destroys the old elements and builds new ones from the string — so listeners attached to the old elements are gone, and so
+      is anything the user typed into an input that was inside. Rebuild only the part that changed, and attach listeners after
+      building (or use event delegation on a parent that survives, lesson 15). Try it: type in the box, then press the button.</div>` },
+      { title: "What innerHTML += destroys", html: `<div id="area">
+  <input id="note" placeholder="type something here first">
+  <button id="hello">Say hello</button>
+</div>
+<button id="grow">Append a paragraph with innerHTML +=</button>`, code: `
+document.getElementById("hello").addEventListener("click", () => console.log("hello!"));
+
+document.getElementById("grow").addEventListener("click", () => {
+  const area = document.getElementById("area");
+  area.innerHTML += "<p>a new paragraph</p>";      // re-parses EVERYTHING inside #area
+  console.log("typed text now:", JSON.stringify(document.getElementById("note").value));
+  console.log("Say hello still works? Click it and see (it doesn't).");
+});
+` },
+
+      { md: `<h2>Working with the browser's rendering</h2>
+      <p>Every structural change can make the browser recompute layout. It's smart about it: it waits and does the work once,
+      after your code finishes. But if your code <em>reads</em> a layout value (like <code>offsetHeight</code>) right after a
+      change, the browser has to lay out the page immediately to answer — and doing that on every pass of a loop
+      (<strong>layout thrashing</strong>) gets slow. Two habits help: batch writes and reads separately, and build big pieces off-page
+      in a <code>DocumentFragment</code> — an invisible container — then attach it in one step.</p>` },
+      { title: "Batching with a DocumentFragment", html: `<p id="info"></p>
+<div id="a" style="height:60px;overflow:auto;border:1px solid #ccc"></div>
+<div id="b" style="height:60px;overflow:auto;border:1px solid #ccc;margin-top:4px"></div>`, code: `
+// Layout measurements need a laid-out page, so this runs once it has loaded.
+window.addEventListener("load", () => {
+const N = 1000;
+
+// Slow: attach each row, then read a layout value — forces layout every time.
+let t0 = performance.now();
+const a = document.getElementById("a");
+for (let i = 0; i < N; i++) {
+  const div = document.createElement("div");
+  div.textContent = "row " + i;
+  a.append(div);
+  a.scrollHeight;                     // a layout read inside the loop
+}
+const slow = performance.now() - t0;
+
+// Fast: build everything in a fragment, attach once, read once.
+t0 = performance.now();
+const frag = document.createDocumentFragment();
+for (let i = 0; i < N; i++) {
+  const div = document.createElement("div");
+  div.textContent = "row " + i;
+  frag.append(div);
+}
+const b = document.getElementById("b");
+b.append(frag);                       // the fragment's children move in; the fragment is now empty
+b.scrollHeight;
+const fast = performance.now() - t0;
+
+console.log(\`one at a time with reads: \${slow.toFixed(1)} ms\`);
+console.log(\`fragment, one attach:     \${fast.toFixed(1)} ms\`);
+document.getElementById("info").textContent = N + " rows in each box";
+});
+` },
+      { title: "Measuring elements", html: `<div id="box" style="width:150px;padding:10px;border:3px solid steelblue;margin:8px">A box</div>
+<button id="measure">Measure</button> <button id="grow">Add text, then measure</button>`, code: `
+// Sizes only exist once the browser has laid the element out on screen,
+// so measure in response to a click (scroll this example into view first).
+const box = document.getElementById("box");
+
+function measure() {
+  const r = box.getBoundingClientRect();
+  console.log("on screen at x =", Math.round(r.left), " y =", Math.round(r.top));
+  console.log("size:", Math.round(r.width), "x", Math.round(r.height), "(includes padding and border)");
+  console.log("offsetWidth:", box.offsetWidth, " clientWidth:", box.clientWidth, "(no border)");
+}
+
+document.getElementById("measure").addEventListener("click", measure);
+document.getElementById("grow").addEventListener("click", () => {
+  box.textContent += " — a lot more text, enough to wrap onto several lines";
+  measure();
+});
+console.log("click Measure");
+` },
+      { md: `<p>Animation uses the browser's drawing rhythm directly: <code>requestAnimationFrame(fn)</code> asks the browser to call
+      <code>fn</code> just before it next paints the screen (about 60 times a second). Change the DOM a little each frame and it
+      moves smoothly — and it pauses automatically in a hidden tab.</p>` },
+      { title: "requestAnimationFrame", html: `<div style="position:relative;height:40px;border:1px solid #ddd">
+  <div id="ball" style="position:absolute;width:30px;height:30px;top:4px;border-radius:50%;background:tomato"></div>
+</div>
+<button id="go">Animate</button>`, code: `
+const ball = document.getElementById("ball");
+
+function animate() {
+  const start = performance.now();
+  const width = ball.parentElement.clientWidth - 32;
+  function frame(now) {
+    const t = Math.min((now - start) / 1500, 1);          // 0 → 1 over 1.5 s
+    ball.style.left = Math.round(width * t) + "px";
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      console.log("done");
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+document.getElementById("go").addEventListener("click", animate);
+` },
+      { md: `<p>And the browser can tell <em>you</em> when the DOM changes: a <code>MutationObserver</code> calls you back with a list of
+      changes — handy for tools, and a nice way to watch what your own code is doing.</p>` },
+      { title: "Watching changes", html: `<ul id="list"><li>one</li></ul>`, code: `
+const list = document.getElementById("list");
+const observer = new MutationObserver(changes => {
+  for (const c of changes) {
+    console.log(c.type, "| added:", c.addedNodes.length, "| removed:", c.removedNodes.length, c.attributeName ?? "");
+  }
+});
+observer.observe(list, { childList: true, attributes: true, subtree: true });
+
+const li = document.createElement("li");
+li.textContent = "two";
+list.append(li);
+list.firstElementChild.remove();
+list.setAttribute("data-count", list.children.length);
+` },
+
+      { md: `<h2>Navigating the tree</h2>
+      <p>Sometimes you have one element and need its relatives — the row a clicked button is in, the next item in a list, the
+      heading above a paragraph.</p>
+      <table>
+        <tr><th>Property</th><th>Gives</th></tr>
+        <tr><td><code>el.parentElement</code></td><td>the parent element (<code>null</code> above <code>&lt;html&gt;</code>)</td></tr>
+        <tr><td><code>el.children</code></td><td>the child <em>elements</em> (live)</td></tr>
+        <tr><td><code>el.firstElementChild</code>, <code>el.lastElementChild</code></td><td>first / last child element</td></tr>
+        <tr><td><code>el.nextElementSibling</code>, <code>el.previousElementSibling</code></td><td>neighbours</td></tr>
+        <tr><td><code>el.closest(selector)</code></td><td>the nearest ancestor (or the element itself) matching the selector</td></tr>
+        <tr><td><code>el.contains(other)</code></td><td>whether <code>other</code> is inside <code>el</code></td></tr>
+      </table>
+      <div class="callout warn"><strong>Elements versus nodes.</strong> <code>childNodes</code>, <code>firstChild</code>,
+      <code>nextSibling</code> and <code>parentNode</code> also exist — and include <em>text nodes</em>, like the invisible whitespace
+      between tags (DOM I). Use the <code>…Element…</code> versions unless you really want text nodes.</div>` },
+      { title: "Navigating", html: `<div id="outer">
+  <p id="first">One</p>
+  <p id="second">Two <em id="em">emphasis</em></p>
+  <p>Three</p>
+</div>`, code: `
+const second = document.getElementById("second");
+console.log(second.parentElement.id);
+console.log(second.previousElementSibling.textContent);
+console.log(second.nextElementSibling.textContent);
+console.log(document.getElementById("outer").children.length, "children");
+console.log(document.getElementById("em").closest("div").id);
+console.log(document.getElementById("outer").contains(document.getElementById("em")));
+
+console.log(second.nextSibling.nodeName, "← nextSibling is the whitespace text node");
+
+// walk up from <em> to the top, recording tag names
+let node = document.getElementById("em");
+const path = [];
+while (node !== null) {
+  path.unshift(node.tagName.toLowerCase());
+  node = node.parentElement;
+}
+console.log(path.join(" > "));
+` },
+      { md: `<h3>Walking the whole tree, recursively</h3>
+      <p>The DOM is nested to any depth, which makes it a perfect fit for recursion (lesson 17): to visit an element, handle it,
+      then visit each of its children the same way.</p>` },
+      { title: "An outline of the tree", html: `<div id="page">
+  <header><h1>Title</h1><nav><a href="#">Home</a><a href="#">About</a></nav></header>
+  <main>
+    <section><h2>Intro</h2><p>Some <b>bold</b> text.</p></section>
+    <section><h2>More</h2><ul><li>a</li><li>b</li></ul></section>
+  </main>
+</div>`, code: `
+function outline(el, depth = 0) {
+  let text = "  ".repeat(depth) + el.tagName.toLowerCase() + (el.id ? "#" + el.id : "") + "\\n";
+  for (const child of el.children) {
+    text += outline(child, depth + 1);
+  }
+  return text;
+}
+
+function countTags(el, counts = {}) {
+  const tag = el.tagName.toLowerCase();
+  counts[tag] = (counts[tag] ?? 0) + 1;
+  for (const child of el.children) {
+    countTags(child, counts);
+  }
+  return counts;
+}
+
+const page = document.getElementById("page");
+console.log(outline(page));
+console.log(countTags(page));
+` },
+      { md: `<h3>A DOM traversal tool</h3>
+      <p>This is the program we wrote together in class. It can be pasted into any page's DevTools console: it adds Parent, Child
+      and Sibling buttons to the top of the page; each press moves a "current element" through the tree and outlines it in the
+      next color. The buttons call methods on <code>window.domTraversal</code> — an object of closures (lesson 12) holding the
+      current element privately. (One fix from the original: it starts from <code>container.nextElementSibling</code>, so the
+      first move never lands on a text node.)</p>` },
+      { title: "Parent, child, sibling", html: `<h3>Recipe</h3>
+<div class="box">
+  <p>Ingredients:</p>
+  <ul>
+    <li>Flour</li>
+    <li>Milk <em>(cold)</em></li>
+    <li>Eggs</li>
+  </ul>
+</div>
+<p>Enjoy!</p>`, code: `
+function domTraversalInit() {
+  const container = document.createElement("div");
+  container.innerHTML =
+    '<button onClick="domTraversal.parent()">Parent</button>' +
+    '<button onClick="domTraversal.child()">Child</button>' +
+    '<button onClick="domTraversal.sibling()">Sibling</button>';
+  document.body.firstElementChild.before(container);
+
+  const colors = ["red", "green", "gold", "orange", "blue"];
+  let curElem = container.nextElementSibling;
+  let nextColor = 0;
+
+  function highlite(e) {
+    e.style.border = \`thick solid \${colors[nextColor]}\`;
+    nextColor += 1;
+    nextColor %= colors.length;
+    console.log("now at <" + e.tagName.toLowerCase() + ">");
+  }
+
+  function parent() {
+    if (curElem.parentElement === null) {
+      return;
+    }
+    curElem = curElem.parentElement;
+    highlite(curElem);
+  }
+
+  function child() {
+    if (curElem.firstElementChild === null) {
+      return;
+    }
+    curElem = curElem.firstElementChild;
+    highlite(curElem);
+  }
+
+  function sibling() {
+    if (curElem.nextElementSibling === null) {
+      return;
+    }
+    curElem = curElem.nextElementSibling;
+    highlite(curElem);
+  }
+
+  highlite(curElem);
+  window.domTraversal = { parent, child, sibling };
+}
+
+domTraversalInit();
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "List from an array", prompt: `Write <code>renderList(items)</code> that empties <code>#list</code> and adds one
+        <code>&lt;li&gt;</code> per item (use <code>textContent</code>). The tests call it.`,
+        html: `<ul id="list"><li>old item</li></ul>`,
+        starter: `function renderList(items) {\n\n}`,
+        solution: `function renderList(items) {\n  const list = document.getElementById("list");\n  list.replaceChildren();\n  for (const item of items) {\n    const li = document.createElement("li");\n    li.textContent = item;\n    list.append(li);\n  }\n}`,
+        checks: [
+          { label: 'renderList(["a", "b", "c"])', run: `renderList(["a", "b", "c"]); return _t.$$("#list li").map(li => li.textContent);` },
+          { label: "renderList([]) empties it", run: `renderList([]); return _t.$$("#list li").length;` },
+          { label: "text stays text", run: `renderList(["<b>x</b>"]); return _t.el("#list").innerHTML;` },
+        ] },
+      { title: "Remove the ads", prompt: `Delete every element with the class <code>ad</code>, then put the number of
+        remaining <code>&lt;p&gt;</code> elements into <code>#count</code>.`,
+        html: `<p>Story part 1</p>
+<p class="ad">BUY NOW</p>
+<p>Story part 2</p>
+<div class="ad">Sponsored</div>
+<p class="ad">Click here</p>
+<p>The end</p>
+<span id="count"></span>`,
+        solution: `for (const el of document.querySelectorAll(".ad")) {\n  el.remove();\n}\ndocument.getElementById("count").textContent = document.querySelectorAll("p").length;`,
+        checks: [{ label: "remaining text", run: `return _t.$$("p").map(p => p.textContent);` }, { label: "ads left", run: `return _t.$$(".ad").length;` }, { label: "#count", run: `return _t.text("#count");` }] },
+      { title: "Table rows", prompt: `Write <code>addRow(name, score)</code> that appends a <code>&lt;tr&gt;</code> with two
+        <code>&lt;td&gt;</code>s to <code>#scores tbody</code>, and gives the row the class <code>pass</code> when the score is
+        at least 60, otherwise <code>fail</code>.`,
+        html: `<table id="scores" border="1"><tbody></tbody></table>`,
+        starter: `function addRow(name, score) {\n\n}`,
+        solution: `function addRow(name, score) {\n  const tr = document.createElement("tr");\n  for (const value of [name, score]) {\n    const td = document.createElement("td");\n    td.textContent = value;\n    tr.append(td);\n  }\n  tr.classList.add(score >= 60 ? "pass" : "fail");\n  document.querySelector("#scores tbody").append(tr);\n}`,
+        checks: [{ label: "add Ada 91 and Bob 40", run: `addRow("Ada", 91); addRow("Bob", 40); return _t.el("#scores tbody").innerHTML;` }] },
+      { title: "Move up, move down", prompt: `Write <code>moveUp(li)</code> and <code>moveDown(li)</code>, which swap an item with
+        its previous / next sibling. At the top (or bottom) they do nothing. Use <code>before</code> / <code>after</code> and the
+        sibling properties — moving an element that's already in the page just moves it.`,
+        html: `<ol id="list"><li>A</li><li>B</li><li>C</li><li>D</li></ol>`,
+        starter: `function moveUp(li) {\n\n}\n\nfunction moveDown(li) {\n\n}`,
+        solution: `function moveUp(li) {\n  const prev = li.previousElementSibling;\n  if (prev) {\n    prev.before(li);\n  }\n}\n\nfunction moveDown(li) {\n  const next = li.nextElementSibling;\n  if (next) {\n    next.after(li);\n  }\n}`,
+        checks: [
+          { label: "moveUp(C)", run: `moveUp(_t.$$("#list li")[2]); return _t.$$("#list li").map(li => li.textContent);` },
+          { label: "then moveDown(A) twice", run: `const a = _t.$$("#list li")[0]; moveDown(a); moveDown(a); return _t.$$("#list li").map(li => li.textContent);` },
+          { label: "moveUp(first) and moveDown(last) do nothing", run: `const lis = _t.$$("#list li"); moveUp(lis[0]); moveDown(lis[3]); return _t.$$("#list li").map(li => li.textContent);` },
+        ] },
+      { title: "Cards from a template", prompt: `Write <code>addCard(title, body)</code> that clones the contents of
+        <code>#tpl</code>, puts <code>title</code> in its <code>h3</code> and <code>body</code> in its <code>p</code> (as text), and
+        appends it to <code>#cards</code>. Return the number of cards now in <code>#cards</code>.`,
+        html: `<template id="tpl"><article class="card"><h3></h3><p></p></article></template>
+<section id="cards"></section>`,
+        starter: `function addCard(title, body) {\n\n}`,
+        solution: `function addCard(title, body) {\n  const card = document.getElementById("tpl").content.cloneNode(true);\n  card.querySelector("h3").textContent = title;\n  card.querySelector("p").textContent = body;\n  document.getElementById("cards").append(card);\n  return document.querySelectorAll("#cards .card").length;\n}`,
+        checks: [
+          { label: "two cards", run: `return [addCard("Hello", "First card"), addCard("<Bye>", "Second & last"), _t.el("#cards").innerHTML];` },
+          { label: "the template is untouched", run: `return _t.el("#tpl").innerHTML;` },
+        ] },
+      { title: "Path to an element", prompt: `Write <code>pathTo(el)</code> returning the tag names from
+        <code>html</code> down to <code>el</code>, lower-case, joined by <code>" &gt; "</code>. For the <code>&lt;em&gt;</code>
+        below it's <code>"html &gt; body &gt; div &gt; p &gt; em"</code>. Also write <code>depth(el)</code>: how many ancestors
+        <code>el</code> has.`,
+        html: `<div><p>Some <em id="target">text</em></p></div>
+<ul><li id="item">x</li></ul>`,
+        starter: `function pathTo(el) {\n\n}\n\nfunction depth(el) {\n\n}`,
+        solution: `function pathTo(el) {\n  const names = [];\n  let node = el;\n  while (node !== null) {\n    names.unshift(node.tagName.toLowerCase());\n    node = node.parentElement;\n  }\n  return names.join(" > ");\n}\n\nfunction depth(el) {\n  let count = 0;\n  let node = el.parentElement;\n  while (node !== null) {\n    count++;\n    node = node.parentElement;\n  }\n  return count;\n}`,
+        checks: [
+          { label: "pathTo(#target)", run: `return pathTo(_t.el("#target"));` },
+          { label: "pathTo(#item)", run: `return pathTo(_t.el("#item"));` },
+          { label: "depth(#target)", run: `return depth(_t.el("#target"));` },
+          { label: "depth(html)", run: `return depth(document.documentElement);` },
+        ] },
+      { title: "Outline, recursively", prompt: `Write <code>outline(el, depth = 0)</code> returning one line per element in
+        <code>el</code>'s subtree (including <code>el</code>), in document order: the tag name in lower case, indented by two spaces
+        per level, each line ending with <code>"\\n"</code>. For the <code>#doc</code> below it starts
+        <code>"div\\n  h1\\n  ul\\n    li\\n…"</code>. Use recursion over <code>children</code>.`,
+        html: `<div id="doc"><h1>T</h1><ul><li>a</li><li>b <b>!</b></li></ul><p>end</p></div>`,
+        starter: `function outline(el, depth = 0) {\n\n}`,
+        solution: `function outline(el, depth = 0) {\n  let text = "  ".repeat(depth) + el.tagName.toLowerCase() + "\\n";\n  for (const child of el.children) {\n    text += outline(child, depth + 1);\n  }\n  return text;\n}`,
+        checks: [{ label: "outline(#doc)", run: `return outline(_t.el("#doc"));` }, { label: "outline(a leaf)", run: `return outline(_t.el("#doc h1"));` }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Create with <code>createElement</code> (plus <code>createTextNode</code>), set it up, then attach with <code>append</code>,
+        <code>prepend</code>, <code>before</code>, <code>after</code>, <code>replaceWith</code> or <code>insertAdjacentHTML</code>.</li>
+        <li>Appending an existing node <strong>moves</strong> it; <code>cloneNode(true)</code> copies it; <code>&lt;template&gt;</code> holds markup to clone.</li>
+        <li>Delete with <code>remove()</code> / <code>replaceChildren()</code>.</li>
+        <li>Render pattern: state in variables → one <code>render()</code> → change the data, then re-render. Rebuilding with
+        <code>innerHTML</code> loses listeners and typed input.</li>
+        <li>Batch DOM writes (a <code>DocumentFragment</code>), avoid layout reads in loops, animate with <code>requestAnimationFrame</code>.</li>
+        <li>Navigate with <code>parentElement</code>, <code>children</code>, <code>…ElementSibling</code>, <code>closest</code>; walk whole subtrees recursively.</li>
+      </ul></div>
+      <p>Next: <strong>Events</strong> — responding to the user.</p>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

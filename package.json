@@ -1,0 +1,22 @@
+{
+  "name": "csc227-intro-javascript",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CSC 227 Introduction to JavaScript — notebook-style course for GitHub Pages",
+  "type": "module",
+  "scripts": {
+    "serve": "npx serve .",
+    "smoke": "node tools/smoke.mjs",
+    "gen-labs": "node tools/gen-labs.js",
+    "grade": "node tools/grade.js"
+  },
+  "devDependencies": {
+    "@babel/standalone": "^7.24.7",
+    "acorn": "8.14.0",
+    "jsdom": "^25.0.1",
+    "playwright-core": "^1.48.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "license": "MIT"
+}

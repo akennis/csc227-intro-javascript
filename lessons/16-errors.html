@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>16 · Multiple Returns &amp; Errors — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 16 of 22</div>
+    <h1>16 · Multiple Returns, Error Values &amp; Exceptions</h1>
+    <p class="lead">Return more than one thing, and tell the caller when something went wrong — as a value, or as an exception.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-16">✏️ Practice this lesson → Lab 16 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Returning several values</h2>
+      <p>A function returns exactly one value — but that value can be an array, so a function can effectively return
+      several. The caller unpacks them with <strong>destructuring</strong>: <code>const [a, b] = …</code> assigns the first
+      element to <code>a</code> and the second to <code>b</code>.</p>` },
+      { title: "Return an array, destructure it", code: `
+function reverse(a, b) {
+  return [b, a];
+}
+
+const [a, b] = reverse(1, 2);
+console.log(a);   // 2
+console.log(b);   // 1
+
+function minMax(nums) {
+  return [Math.min(...nums), Math.max(...nums)];
+}
+const [lo, hi] = minMax([4, 9, 1, 7]);
+console.log(lo, hi);
+` },
+      { md: `<h3>More destructuring</h3>` },
+      { title: "Skipping, rest, defaults, swapping", code: `
+const [first, , third] = ["a", "b", "c", "d"];      // skip the second
+console.log(first, third);
+
+const [head, ...rest] = [1, 2, 3, 4];               // the rest as an array
+console.log(head, rest);
+
+const [x = 10, y = 20] = [5];                       // defaults for missing values
+console.log(x, y);
+
+let left = "L", right = "R";
+[left, right] = [right, left];                      // swap in one line
+console.log(left, right);
+` },
+      { md: `<p>When there are more than two or three results, return an <strong>object</strong> instead: the names make
+      the result self-describing and the order doesn't matter. Destructure objects with braces.</p>` },
+      { title: "Return an object", code: `
+function stats(nums) {
+  const total = nums.reduce((s, n) => s + n, 0);
+  return { min: Math.min(...nums), max: Math.max(...nums), mean: total / nums.length, count: nums.length };
+}
+
+const { mean, max } = stats([2, 4, 9]);      // take just the ones you need, by name
+console.log(mean, max);
+
+const { min: lowest, count } = stats([5, 1]); // rename while unpacking
+console.log(lowest, count);
+
+function describe({ name, age = "unknown" }) {   // destructure a parameter
+  return name + " (" + age + ")";
+}
+console.log(describe({ name: "Rover", age: 8 }), describe({ name: "Ada" }));
+` },
+
+      { md: `<h2>Two ways to report errors</h2>
+      <p>Sometimes a function can't do what was asked: not enough money, a missing file, input that isn't a number. It
+      has to tell its caller. There are two styles:</p>
+      <ol>
+        <li><strong>Errors as values</strong> — return the error as an ordinary value, alongside the result.</li>
+        <li><strong>Exceptions</strong> — <code>throw</code> the error, which abandons the function immediately; the caller
+        <code>catch</code>es it.</li>
+      </ol>
+      <h3>Errors as values</h3>
+      <p>The function returns a pair <code>[error, result]</code>. Exactly one of them is set; the other is
+      <code>undefined</code>. The caller unpacks both and checks the error first.</p>` },
+      { title: "withdraw, errors as values", code: `
+function withdraw(acct, val) {
+  if (acct.bal < val) {
+    return [\`insufficient balance (\${acct.bal}) < val (\${val})\`, undefined];
+  }
+  acct.bal -= val;
+  return [undefined, acct.bal];
+}
+
+const acct = { bal: 100 };
+
+let [error, newBal] = withdraw(acct, 90);
+if (error) {
+  console.log(error);
+} else {
+  console.log(\`new balance \${newBal}\`);
+}
+
+[error, newBal] = withdraw(acct, 90);       // try again: only 10 left
+if (error) {
+  console.log(error);
+} else {
+  console.log(\`new balance \${newBal}\`);
+}
+` },
+      { md: `<h3>Exceptions</h3>
+      <p><code>throw</code> stops the function right there and starts <em>unwinding</em>: JavaScript leaves each function in
+      turn until it finds a <code>try</code> block whose <code>catch</code> receives the thrown value. If nothing catches it,
+      the program stops with an "uncaught" error — like every red error you've seen so far.</p>` },
+      { title: "withdraw, with exceptions", code: `
+function withdraw(acct, val) {
+  if (acct.bal < val) {
+    throw \`insufficient balance (\${acct.bal}) < val (\${val})\`;
+  }
+  acct.bal -= val;
+  return acct.bal;
+}
+
+const acct = { bal: 100 };
+try {
+  const newBal = withdraw(acct, 90);
+  console.log(\`new balance \${newBal}\`);
+  const again = withdraw(acct, 90);       // throws: the next line is skipped
+  console.log("never printed", again);
+} catch (e) {
+  console.log("caught:", e);
+}
+console.log("the program carries on");
+` },
+      { md: `<h3>Throw Error objects</h3>
+      <p>You can throw any value, but throw an <code>Error</code> object: it carries a <code>message</code>, a
+      <code>name</code>, and a <strong>stack trace</strong> showing where it happened, which DevTools displays. Built-in errors
+      (<code>TypeError</code>, <code>RangeError</code>, …) are <code>Error</code> objects too, and so are the errors JavaScript
+      itself throws — which you can catch the same way.</p>` },
+      { title: "Error objects", code: `
+function parseAge(text) {
+  const n = Number(text);
+  if (text.trim() === "" || Number.isNaN(n)) {
+    throw new TypeError(\`"\${text}" is not a number\`);
+  }
+  if (n < 0 || n > 150) {
+    throw new RangeError("age must be between 0 and 150, got " + n);
+  }
+  return n;
+}
+
+for (const input of ["42", "abc", "-3", ""]) {
+  try {
+    console.log(input, "->", parseAge(input));
+  } catch (e) {
+    console.log(input, "->", e.name + ":", e.message);
+  }
+}
+
+try {
+  JSON.parse("{ not json }");             // built-ins throw too
+} catch (e) {
+  console.log("JSON problem:", e.name);
+}
+` },
+      { md: `<h3>finally, and catching selectively</h3>
+      <p>A <code>finally</code> block runs whether or not an error occurred — the place for clean-up. Inside
+      <code>catch</code>, handle the errors you expect and <strong>re-throw</strong> the rest, so real bugs aren't hidden.</p>` },
+      { title: "finally and re-throwing", code: `
+function risky(kind) {
+  if (kind === "range") throw new RangeError("out of range");
+  if (kind === "bug") throw new TypeError("undefined is not a function");
+  return "ok";
+}
+
+function attempt(kind) {
+  console.log("start", kind);
+  try {
+    return risky(kind);
+  } catch (e) {
+    if (e instanceof RangeError) {
+      return "handled: " + e.message;   // expected: recover
+    }
+    throw e;                            // unexpected: pass it on
+  } finally {
+    console.log("finally runs for", kind);
+  }
+}
+
+console.log(attempt("fine"));
+console.log(attempt("range"));
+try {
+  attempt("bug");
+} catch (e) {
+  console.log("outer caught:", e.message);
+}
+` },
+      { title: "Exceptions travel up the call stack", code: `
+function level3() { throw new Error("deep problem"); }
+function level2() { level3(); console.log("level2 never finishes"); }
+function level1() { level2(); }
+
+try {
+  level1();
+} catch (e) {
+  console.log("caught at the top:", e.message);
+}
+` },
+
+      { md: `<h2>Choosing a style</h2>
+      <ul>
+        <li>In JavaScript, <strong>exceptions</strong> are the mainstream way to report errors to a caller — built-ins and
+        most libraries throw.</li>
+        <li>But callers may not easily know which functions throw. Code that isn't wrapped in <code>try/catch</code> when
+        exceptions are possible leads to bugs and unexpected behaviour. Ideally function names communicate it, but that's not
+        always (often) the case.</li>
+        <li>Other languages (Go, for example) favour <strong>errors as values</strong>: callers must unpack the error into a
+        local variable, the control flow is ordinary <code>if</code>s, and the code is readable and maintainable.</li>
+        <li><strong>Pick one style and stick to it</strong> within a program; don't mix and match. You can adapt from one to
+        the other inside a single function, at the boundary.</li>
+      </ul>` },
+      { title: "Adapting between styles", code: `
+// exception style -> errors as values
+function tryParse(text) {
+  try {
+    return [undefined, JSON.parse(text)];
+  } catch (e) {
+    return [e.message, undefined];
+  }
+}
+
+// errors as values -> exception style
+function mustParse(text) {
+  const [err, value] = tryParse(text);
+  if (err) {
+    throw new Error("bad config: " + err);
+  }
+  return value;
+}
+
+console.log(tryParse('{"debug": true}'));
+console.log(tryParse("{oops}")[0] !== undefined);
+try {
+  mustParse("{oops}");
+} catch (e) {
+  console.log(e.message.slice(0, 40) + "…");
+}
+` },
+      { md: `<div class="callout warn"><strong>Don't swallow errors.</strong> An empty <code>catch (e) {}</code> hides the problem
+      and leaves the program in an unknown state. At minimum log it; better, handle it or let it propagate. And catch as
+      close to where you can <em>do something about it</em> as possible — often that's the edge of the program, where you can
+      show the user a message.</div>` },
+      { title: "Showing errors to the user", html: `<label>Age <input id="age"></label> <button onclick="save()">Save</button>
+<p id="msg"></p>`, code: `
+function parseAge(text) {
+  const n = Number(text);
+  if (text.trim() === "" || Number.isNaN(n)) throw new Error("Please enter a number.");
+  if (!Number.isInteger(n) || n < 0) throw new Error("Age must be a whole number, 0 or more.");
+  return n;
+}
+
+function save() {
+  const msg = document.getElementById("msg");
+  try {
+    const age = parseAge(document.getElementById("age").value);
+    msg.style.color = "green";
+    msg.textContent = "Saved: " + age;
+  } catch (e) {
+    msg.style.color = "crimson";
+    msg.textContent = e.message;
+  }
+}
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "First and last", prompt: `Write <code>ends(arr)</code> returning <code>[first, last]</code> — the first and
+        last elements of a non-empty array — and use destructuring inside <code>swapEnds(arr)</code> to return a <em>new</em>
+        array with those two swapped.`,
+        solution: `function ends(arr) {\n  return [arr[0], arr[arr.length - 1]];\n}\n\nfunction swapEnds(arr) {\n  const copy = [...arr];\n  const [first, last] = ends(arr);\n  copy[0] = last;\n  copy[copy.length - 1] = first;\n  return copy;\n}`,
+        checks: [{ expr: "ends([1, 2, 3])" }, { expr: "ends([7])" }, { expr: "swapEnds([1, 2, 3, 4])" }, { expr: `swapEnds(["a"])` }] },
+      { title: "Stats object", prompt: `Write <code>summarize(nums)</code> returning <code>{ count, total, mean }</code>
+        (<code>mean</code> is 0 for an empty array).`,
+        solution: `function summarize(nums) {\n  const total = nums.reduce((s, n) => s + n, 0);\n  return { count: nums.length, total, mean: nums.length ? total / nums.length : 0 };\n}`,
+        checks: [{ expr: "summarize([1, 2, 3, 6])" }, { expr: "summarize([])" }] },
+      { title: "Safe division", prompt: `Write <code>safeDivide(a, b)</code> in the <strong>errors-as-values</strong> style:
+        return <code>["division by zero", undefined]</code> when <code>b</code> is 0, otherwise
+        <code>[undefined, a / b]</code>.`,
+        solution: `function safeDivide(a, b) {\n  if (b === 0) {\n    return ["division by zero", undefined];\n  }\n  return [undefined, a / b];\n}`,
+        checks: [{ expr: "safeDivide(10, 4)" }, { expr: "safeDivide(1, 0)" }] },
+      { title: "Throwing validation", prompt: `Write <code>parseScore(text)</code> that returns the number in
+        <code>text</code>, or throws: <code>new TypeError("not a number")</code> if it isn't a number (or is empty), or
+        <code>new RangeError("out of range")</code> if it's below 0 or above 100.`,
+        solution: `function parseScore(text) {\n  const n = Number(text);\n  if (text.trim() === "" || Number.isNaN(n)) {\n    throw new TypeError("not a number");\n  }\n  if (n < 0 || n > 100) {\n    throw new RangeError("out of range");\n  }\n  return n;\n}`,
+        checks: [
+          { expr: `parseScore("88")` },
+          { label: `parseScore("abc") throws`, run: `try { parseScore("abc"); return "no error"; } catch (e) { return [e.name, e.message]; }` },
+          { label: `parseScore("") throws`, run: `try { parseScore(""); return "no error"; } catch (e) { return [e.name, e.message]; }` },
+          { label: `parseScore("101") throws`, run: `try { parseScore("101"); return "no error"; } catch (e) { return [e.name, e.message]; }` },
+        ] },
+      { title: "Adapter", prompt: `<code>parseScore</code> from the previous challenge is given. Write
+        <code>tryScore(text)</code> that converts its exception style into errors-as-values: <code>[undefined, score]</code>
+        on success, <code>[message, undefined]</code> on failure.`,
+        starter: `function parseScore(text) {\n  const n = Number(text);\n  if (text.trim() === "" || Number.isNaN(n)) {\n    throw new TypeError("not a number");\n  }\n  if (n < 0 || n > 100) {\n    throw new RangeError("out of range");\n  }\n  return n;\n}\n\nfunction tryScore(text) {\n\n}`,
+        solution: `function parseScore(text) {\n  const n = Number(text);\n  if (text.trim() === "" || Number.isNaN(n)) {\n    throw new TypeError("not a number");\n  }\n  if (n < 0 || n > 100) {\n    throw new RangeError("out of range");\n  }\n  return n;\n}\n\nfunction tryScore(text) {\n  try {\n    return [undefined, parseScore(text)];\n  } catch (e) {\n    return [e.message, undefined];\n  }\n}`,
+        checks: [{ expr: `tryScore("75")` }, { expr: `tryScore("x")` }, { expr: `tryScore("-1")` }] },
+      { title: "Transfer with rollback", prompt: `<code>withdraw</code> throws when funds are short. Write
+        <code>transfer(from, to, amount)</code> that withdraws from <code>from</code> and deposits into <code>to</code>,
+        returning <code>true</code>. If the withdrawal fails, leave both accounts unchanged and return <code>false</code>
+        (catch the exception).`,
+        starter: `function withdraw(acct, val) {\n  if (acct.bal < val) {\n    throw new Error("insufficient balance");\n  }\n  acct.bal -= val;\n  return acct.bal;\n}\n\nfunction transfer(from, to, amount) {\n\n}`,
+        solution: `function withdraw(acct, val) {\n  if (acct.bal < val) {\n    throw new Error("insufficient balance");\n  }\n  acct.bal -= val;\n  return acct.bal;\n}\n\nfunction transfer(from, to, amount) {\n  try {\n    withdraw(from, amount);\n  } catch (e) {\n    return false;\n  }\n  to.bal += amount;\n  return true;\n}`,
+        checks: [
+          { label: "transfer 30 of 100", run: `const a = { bal: 100 }, b = { bal: 5 }; return [transfer(a, b, 30), a, b];` },
+          { label: "transfer 300 of 100", run: `const a = { bal: 100 }, b = { bal: 5 }; return [transfer(a, b, 300), a, b];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Return several values in an array (<code>const [a, b] = f()</code>) or, better for many, an object (<code>const { x, y } = f()</code>).</li>
+        <li>Errors as values: return <code>[error, result]</code>; the caller checks <code>error</code> first.</li>
+        <li>Exceptions: <code>throw new Error(msg)</code>; <code>try { … } catch (e) { … } finally { … }</code>.</li>
+        <li>Thrown errors unwind the call stack until caught; uncaught ones stop the program.</li>
+        <li>Catch what you can handle, re-throw the rest, never swallow silently.</li>
+        <li>Pick one style per program; adapt between them at the boundaries.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

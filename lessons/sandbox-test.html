@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sandbox test — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">Developer page · not part of the course</div>
+    <h1>Sandbox test</h1>
+    <p class="lead">Every way a program can misbehave, in both runners. The page must stay responsive throughout.</p>
+  </header>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Worker runner</h2>` },
+      { title: "console formatting", code: `
+        console.log("hello", 42, true, null, undefined);
+        console.log([1, "two", [3]], { name: "Rover", age: 8, tags: ["good", "dog"] });
+        console.log(new Map([["a", 1]]), new Set([1, 2]), function cToF(c) {}, -0, NaN);
+        console.warn("a warning");
+        console.error("an error");
+      ` },
+      { title: "while (true) — guarded, logs kept", expectError: true, code: `
+        console.log("before the loop");
+        let i = 0;
+        while (true) { i++; }
+        console.log("never printed");
+      ` },
+      { title: "infinite loop that logs (output capped in the sandbox)", expectError: true, code: `
+        let n = 0;
+        while (true) { console.log("tick", n++); }
+      ` },
+      { title: "frame: infinite loop that logs", expectError: true, html: "", code: `
+        while (true) { console.log("frame tick"); }
+      ` },
+      { title: "empty-body for(;;);", expectError: true, code: `for (;;);` },
+      { title: "busy-wait sleep(300) finishes", code: `
+        function sleep(t) {
+          console.log("Timer started");
+          const start = Date.now();
+          while (Date.now() - start < t) { }
+          console.log("Timer done");
+        }
+        sleep(300);
+      ` },
+      { title: "infinite recursion", expectError: true, code: `
+        function f(n) { return f(n + 1); }
+        f(0);
+      ` },
+      { title: "syntax error", expectError: true, code: `
+        let x = ;
+      ` },
+      { title: "runtime error with line number", expectError: true, code: `
+        const pi = 3.14;
+        console.log(pi);
+        pi = 9;
+      ` },
+      { title: "top-level await", code: `
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        console.log("waiting…");
+        await wait(100);
+        console.log("done waiting");
+      ` },
+      { title: "uncaught thrown string", expectError: true, code: `throw "insufficient balance";` },
+
+      { md: `<h2>Frame runner</h2>` },
+      { title: "DOM + click handler", html: `<button id="b">Click me</button> <span id="out">0</span>`, code: `
+        let clicks = 0;
+        document.getElementById("b").addEventListener("click", () => {
+          clicks++;
+          document.getElementById("out").textContent = clicks;
+          console.log("clicked", clicks);
+        });
+      ` },
+      { title: "inline onclick handler (classic globals)", html: `<input id="a" value="2"> + <input id="b" value="3"> <button onclick="add()">=</button> <input id="res">`, code: `
+        function add() {
+          const x = Number(document.getElementById("a").value);
+          const y = Number(document.getElementById("b").value);
+          document.getElementById("res").value = x + y;
+        }
+      ` },
+      { title: "while (true) at top level — guarded", expectError: true, html: `<p>The page should still appear.</p>`, code: `
+        console.log("start");
+        while (true) {}
+      ` },
+      { title: "infinite loop inside a click handler", html: `<button id="hang">Hang?</button>`, code: `
+        document.getElementById("hang").addEventListener("click", () => {
+          console.log("clicked — looping forever");
+          for (let i = 0; i >= 0; i++) {}
+        });
+      ` },
+      { title: "frame error line number", expectError: true, html: ``, code: `
+        console.log("line 1");
+        undefinedFunction();
+      ` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Celsius to Fahrenheit", prompt: `Write <code>cToF(c)</code> returning the Fahrenheit temperature.`,
+        starter: `function cToF(c) {\n  // your code here\n}`,
+        solution: `function cToF(c) {\n  return c * 9 / 5 + 32;\n}`,
+        checks: [{ expr: "cToF(0)" }, { expr: "cToF(100)" }, { expr: "cToF(-40)" }, { expr: "cToF(37)" }] },
+      { title: "Log a countdown", prompt: `Log 3, 2, 1, then <code>"Liftoff!"</code>.`, logs: true,
+        solution: `for (let i = 3; i > 0; i--) {\n  console.log(i);\n}\nconsole.log("Liftoff!");`, checks: [] },
+      { title: "Add numbers form", prompt: `Make the button put the sum of the two inputs into <code>#res</code>.`,
+        html: `<input id="arg1" placeholder="arg1"><br><input id="arg2" placeholder="arg2"><br><button id="add">Add numbers</button><br><input id="res">`,
+        starter: `document.getElementById("add").addEventListener("click", () => {\n  // your code here\n});`,
+        solution: `document.getElementById("add").addEventListener("click", () => {\n  const a = Number(document.getElementById("arg1").value);\n  const b = Number(document.getElementById("arg2").value);\n  document.getElementById("res").value = a + b;\n});`,
+        checks: [
+          { label: "3 + 4", run: `_t.type("#arg1", 3); _t.type("#arg2", 4); _t.click("#add"); return _t.value("#res");` },
+          { label: "2.5 + -1", run: `_t.type("#arg1", 2.5); _t.type("#arg2", -1); _t.click("#add"); return _t.value("#res");` },
+        ] },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

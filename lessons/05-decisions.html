@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>05 · Booleans &amp; Decisions — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 5 of 22</div>
+    <h1>05 · Booleans &amp; Decisions</h1>
+    <p class="lead">Ask yes/no questions about your data, combine them, and choose what to do with <code>if</code> / <code>else</code>.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-05">✏️ Practice this lesson → Lab 05 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Programs ask yes/no questions</h2>
+      <p>When a program has to decide something about the world or its data, it almost always asks a
+      <strong>yes/no question</strong>. Karel asked <code>frontIsClear()</code> and <code>facingNorth()</code>. With
+      data, the questions look like <code>isOdd(n)</code>, <code>isEqual(x, y)</code>, or
+      <code>playerHasLives(player)</code>. The answers are the two <strong>boolean</strong> values,
+      <code>true</code> and <code>false</code> — and a function can return one, just like it returns a number.</p>` },
+
+      { md: `<h2>Relational operators</h2>
+      <p>A <strong>relational</strong> (comparison) operator tests two values and produces <code>true</code> or
+      <code>false</code>.</p>
+      <table>
+        <tr><th>Operator</th><th>Meaning</th><th>Example → result</th></tr>
+        <tr><td><code>===</code></td><td>equal (same type and value)</td><td><code>5 === 5</code> → true</td></tr>
+        <tr><td><code>!==</code></td><td>not equal</td><td><code>5 !== 6</code> → true</td></tr>
+        <tr><td><code>&lt;</code> <code>&gt;</code></td><td>less / greater than</td><td><code>4 &lt; 5</code> → true</td></tr>
+        <tr><td><code>&lt;=</code> <code>&gt;=</code></td><td>less / greater than or equal</td><td><code>5 &gt;= 5</code> → true</td></tr>
+      </table>` },
+      { title: "Comparisons", code: `
+console.log(5 === 5);
+console.log(5 !== 6);
+console.log(5 !== 5);
+console.log(4 < 5, 4 > 5, 5 <= 5, 6 >= 7);
+const age = 20;
+const isAdult = age >= 18;     // a comparison is a value you can store
+console.log("isAdult:", isAdult, typeof isAdult);
+` },
+      { md: `<div class="callout warn"><strong><code>===</code> versus <code>==</code>.</strong> JavaScript also has
+      <code>==</code> and <code>!=</code>, which <em>convert</em> types before comparing, with surprising results
+      (<code>"5" == 5</code> is true, <code>0 == ""</code> is true, <code>null == undefined</code> is true). Always use
+      <code>===</code> and <code>!==</code>. And never confuse <code>=</code> (store a value) with <code>===</code>
+      (compare two values).</div>` },
+      { title: "Why === is safer", code: `
+console.log("5" == 5, "5" === 5);
+console.log(0 == "", 0 === "");
+console.log(null == undefined, null === undefined);
+console.log(NaN === NaN);          // NaN is not equal to anything — use Number.isNaN
+console.log(Number.isNaN(NaN));
+` },
+      { md: `<p>Strings compare too: <code>===</code> checks for exactly the same characters (including case), and
+      <code>&lt;</code> / <code>&gt;</code> compare alphabetically, character by character — but capitals sort before all
+      lowercase letters.</p>` },
+      { title: "Comparing strings", code: `
+const l = "abc";
+console.log(l === "abc", l === "ABC");
+console.log(l < "b", l < "a", l > "a");
+console.log("Zebra" < "apple");      // true! "Z" comes before "a"
+console.log("10" < "9");             // true! compared as text, "1" < "9"
+console.log(10 < 9);                 // false, compared as numbers
+` },
+
+      { md: `<h2>Logical operators</h2>
+      <p><strong>Logical</strong> operators act on booleans, combining simple questions into more complex ones.</p>
+      <table>
+        <tr><th>Operator</th><th>Name</th><th>True when…</th></tr>
+        <tr><td><code>!a</code></td><td>not</td><td><code>a</code> is false</td></tr>
+        <tr><td><code>a &amp;&amp; b</code></td><td>and</td><td>both are true</td></tr>
+        <tr><td><code>a || b</code></td><td>or</td><td>at least one is true</td></tr>
+      </table>` },
+      { title: "Not, and, or", code: `
+console.log(!(5 === 5));
+console.log(!(5 !== 5));
+console.log((4 < 5) && (5 < 6));
+console.log((4 < 5) && (6 < 1));
+console.log((4 < 5) || (6 < 1));
+
+const r = "Y";
+console.log((r === "y") || (r === "Y"));   // accept either case
+
+const temp = 72;
+console.log("comfortable:", temp >= 65 && temp <= 78);
+` },
+      { md: `<p><code>&amp;&amp;</code> and <code>||</code> <strong>short-circuit</strong>: they stop as soon as the answer is
+      known. In <code>a &amp;&amp; b</code>, if <code>a</code> is false, <code>b</code> is never evaluated. This is useful
+      for guarding against errors — <code>user !== null &amp;&amp; user.isAdmin</code> never reads <code>isAdmin</code> of
+      <code>null</code>.</p>
+      <div class="callout warn"><strong>Ranges need two comparisons.</strong> In maths you write 1 &lt; x &lt; 10. In
+      JavaScript, <code>1 &lt; x &lt; 10</code> runs as <code>(1 &lt; x) &lt; 10</code> — a boolean compared with 10 — and is
+      almost always true. Write <code>1 &lt; x &amp;&amp; x &lt; 10</code>.</div>` },
+      { title: "The range trap", code: `
+const x = 50;
+console.log(1 < x < 10);            // true?! (1 < 50) is true, and true < 10
+console.log(1 < x && x < 10);       // false — the correct test
+` },
+
+      { md: `<h2>if / else</h2>
+      <p>An <code>if</code> statement tests a condition and runs its block only when the condition is true. An
+      optional <code>else</code> block runs when it's false.</p>
+      <pre class="code">if (facingNorth()) {
+  turnRight();
+  moveUntilBlocked();
+} else {
+  move();
+}</pre>` },
+      { title: "Choosing a message", code: `
+function describeTemp(t) {
+  if (t > 30) {
+    return "hot";
+  } else {
+    return "not hot";
+  }
+}
+
+console.log(describeTemp(35));
+console.log(describeTemp(12));
+
+const balance = 40;
+const price = 55;
+if (balance >= price) {
+  console.log("Purchase approved");
+} else {
+  console.log("Insufficient funds: you need $" + (price - balance) + " more");
+}
+` },
+      { md: `<h3>else if: more than two choices</h3>
+      <p>To take different actions for several conditions, chain them with <code>else if</code>. They're tested
+      top to bottom, and only the <strong>first</strong> true branch runs.</p>` },
+      { title: "Absolute value, the long way", code: `
+function absolute(x) {
+  if (x > 0) {
+    return x;
+  } else if (x < 0) {
+    return -1 * x;
+  } else {
+    return 0;
+  }
+}
+
+console.log(absolute(5), absolute(-5), absolute(0));
+console.log(Math.abs(-5));   // the built-in does the same job
+` },
+      { title: "Order matters", code: `
+function letterGrade(score) {
+  if (score >= 90) {
+    return "A";
+  } else if (score >= 80) {
+    return "B";
+  } else if (score >= 70) {
+    return "C";
+  } else if (score >= 60) {
+    return "D";
+  } else {
+    return "F";
+  }
+}
+
+console.log(letterGrade(95), letterGrade(85), letterGrade(72), letterGrade(40));
+// If the >= 60 test came first, a 95 would get a "D" — the first true branch wins.
+` },
+      { md: `<h3>Nested decisions</h3>
+      <p>Blocks can contain other <code>if</code> statements. Often a combined condition with
+      <code>&amp;&amp;</code> or <code>||</code> reads more clearly than nesting — try both and keep the clearer one.</p>` },
+      { title: "Nested versus combined", code: `
+function canRent(age, hasLicense) {
+  if (age >= 25) {
+    if (hasLicense) {
+      return "yes";
+    } else {
+      return "no: license required";
+    }
+  } else {
+    return "no: must be 25";
+  }
+}
+
+function canRentSimple(age, hasLicense) {
+  return age >= 25 && hasLicense;
+}
+
+console.log(canRent(30, true), canRent(30, false), canRent(20, true));
+console.log(canRentSimple(30, true), canRentSimple(20, true));
+` },
+
+      { md: `<h2>Functions that answer questions</h2>
+      <p>A function whose name starts with <code>is</code>, <code>has</code>, or <code>can</code> should return a
+      boolean. The first version below works, but it's longer than it needs to be: the comparison
+      <code>x &gt; y</code> <em>already is</em> true or false, so you can return it directly.</p>` },
+      { title: "Returning booleans", code: `
+function isGreaterThan(x, y) {
+  if (x > y) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function isGreaterThanShort(x, y) {
+  return x > y;
+}
+
+function isOdd(n) {
+  return n % 2 !== 0;
+}
+
+function isEqual(x, y) {
+  return x === y;
+}
+
+function playerHasLives(lives) {
+  return lives > 0;
+}
+
+console.log(isGreaterThan(5, 3), isGreaterThanShort(5, 3));
+console.log(isOdd(7), isOdd(10), isOdd(-3));
+console.log(isEqual("a", "a"), playerHasLives(0));
+` },
+
+      { md: `<h2>Truthy and falsy</h2>
+      <p>An <code>if</code> condition doesn't have to be a boolean. JavaScript treats exactly these values as
+      <strong>falsy</strong> (they act like <code>false</code>): <code>false</code>, <code>0</code>, <code>""</code>
+      (empty string), <code>null</code>, <code>undefined</code>, and <code>NaN</code>. <strong>Everything else is
+      truthy</strong> — including <code>"0"</code>, <code>"false"</code>, and <code>[]</code>.</p>` },
+      { title: "Truthiness", code: `
+function check(value) {
+  if (value) {
+    console.log(JSON.stringify(value), "is truthy");
+  } else {
+    console.log(JSON.stringify(value), "is falsy");
+  }
+}
+
+check(0);
+check(42);
+check("");
+check("hello");
+check("0");
+check(null);
+check([]);
+console.log(Boolean("hi"), Boolean(""));   // convert explicitly
+` },
+      { md: `<p>Truthiness gives a handy shortcut: <code>if (name)</code> means "if <code>name</code> isn't empty".
+      And <code>||</code> returns the first truthy value, so <code>name || "Guest"</code> gives a fallback. (The
+      newer <code>??</code> operator only falls back for <code>null</code>/<code>undefined</code>, so it keeps a
+      legitimate <code>0</code>.)</p>` },
+      { title: "Fallbacks", code: `
+const typedName = "";
+console.log("Hello, " + (typedName || "Guest"));
+const volume = 0;
+console.log(volume || 50);   // 50 — oops, 0 was a real setting
+console.log(volume ?? 50);   // 0 — ?? only replaces null/undefined
+` },
+
+      { md: `<h2>Two more forms</h2>
+      <p>The <strong>conditional (ternary) operator</strong> <code>condition ? a : b</code> is a compact
+      <code>if/else</code> that produces a value. Use it for short choices; use <code>if</code> for anything longer.</p>` },
+      { title: "The ternary operator", code: `
+const n = 7;
+const parity = n % 2 === 0 ? "even" : "odd";
+console.log(n + " is " + parity);
+
+function plural(count, word) {
+  return count + " " + (count === 1 ? word : word + "s");
+}
+console.log(plural(1, "apple"), plural(3, "apple"));
+` },
+      { md: `<p>A <code>switch</code> compares one value against many exact cases (with <code>===</code>). Each case
+      ends with <code>break</code> (or <code>return</code>), or execution falls through into the next case.</p>` },
+      { title: "switch", code: `
+function dayType(day) {
+  switch (day) {
+    case "Saturday":
+    case "Sunday":
+      return "weekend";
+    case "Friday":
+      return "almost weekend";
+    default:
+      return "weekday";
+  }
+}
+console.log(dayType("Sunday"), dayType("Friday"), dayType("Tuesday"));
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "isEven", prompt: `Write <code>isEven(n)</code> returning <code>true</code> for even numbers and
+        <code>false</code> otherwise. Return the comparison directly — no <code>if</code> needed.`,
+        solution: `function isEven(n) {\n  return n % 2 === 0;\n}`,
+        checks: [{ expr: "isEven(4)" }, { expr: "isEven(7)" }, { expr: "isEven(0)" }, { expr: "isEven(-2)" }] },
+      { title: "Biggest of three", prompt: `Write <code>max3(a, b, c)</code> that returns the largest of three
+        numbers using <code>if</code> / <code>else if</code> (not <code>Math.max</code>).`,
+        solution: `function max3(a, b, c) {\n  if (a >= b && a >= c) {\n    return a;\n  } else if (b >= c) {\n    return b;\n  } else {\n    return c;\n  }\n}`,
+        checks: [{ expr: "max3(1, 2, 3)" }, { expr: "max3(3, 2, 1)" }, { expr: "max3(2, 3, 1)" }, { expr: "max3(5, 5, 1)" }, { expr: "max3(-1, -9, -4)" }] },
+      { title: "Yes or no", prompt: `Write <code>isYes(answer)</code> that returns <code>true</code> when the
+        answer is <code>"y"</code>, <code>"Y"</code>, <code>"yes"</code>, or <code>"YES"</code>, and
+        <code>false</code> for anything else.`,
+        solution: `function isYes(answer) {\n  return answer === "y" || answer === "Y" || answer === "yes" || answer === "YES";\n}`,
+        checks: [{ expr: `isYes("y")` }, { expr: `isYes("Y")` }, { expr: `isYes("yes")` }, { expr: `isYes("YES")` }, { expr: `isYes("n")` }, { expr: `isYes("yep")` }] },
+      { title: "Ticket prices", prompt: `Write <code>ticketPrice(age)</code>: children under 3 are free
+        (<code>0</code>), ages 3–12 pay <code>8</code>, ages 65 and over pay <code>10</code>, everyone else pays
+        <code>15</code>.`,
+        solution: `function ticketPrice(age) {\n  if (age < 3) {\n    return 0;\n  } else if (age <= 12) {\n    return 8;\n  } else if (age >= 65) {\n    return 10;\n  } else {\n    return 15;\n  }\n}`,
+        checks: [{ expr: "ticketPrice(1)" }, { expr: "ticketPrice(3)" }, { expr: "ticketPrice(12)" }, { expr: "ticketPrice(13)" }, { expr: "ticketPrice(40)" }, { expr: "ticketPrice(65)" }] },
+      { title: "In range", prompt: `Write <code>inRange(x, low, high)</code> returning whether <code>x</code> is
+        between <code>low</code> and <code>high</code>, inclusive.`,
+        solution: `function inRange(x, low, high) {\n  return x >= low && x <= high;\n}`,
+        checks: [{ expr: "inRange(5, 1, 10)" }, { expr: "inRange(1, 1, 10)" }, { expr: "inRange(10, 1, 10)" }, { expr: "inRange(0, 1, 10)" }, { expr: "inRange(50, 1, 10)" }] },
+      { title: "Leap years", prompt: `Write <code>isLeapYear(year)</code>. A year is a leap year if it's divisible
+        by 4 — <em>except</em> years divisible by 100, which are not — <em>except</em> years divisible by 400, which are.`,
+        solution: `function isLeapYear(year) {\n  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;\n}`,
+        hint: `"Divisible by 4" is <code>year % 4 === 0</code>. Try writing the rule as: (divisible by 4 and not by 100)
+        or (divisible by 400).`,
+        checks: [{ expr: "isLeapYear(2024)" }, { expr: "isLeapYear(2023)" }, { expr: "isLeapYear(1900)" }, { expr: "isLeapYear(2000)" }, { expr: "isLeapYear(2100)" }] },
+      { title: "Describe a number", prompt: `Write <code>describe(n)</code> returning a string:
+        <code>"zero"</code> for 0; otherwise <code>"positive even"</code>, <code>"positive odd"</code>,
+        <code>"negative even"</code>, or <code>"negative odd"</code>.`,
+        solution: `function describe(n) {\n  if (n === 0) {\n    return "zero";\n  }\n  const sign = n > 0 ? "positive" : "negative";\n  const parity = n % 2 === 0 ? "even" : "odd";\n  return sign + " " + parity;\n}`,
+        hint: `Handle zero first and return. Then build the answer from two separate decisions: sign, and parity.
+        Careful: <code>-3 % 2</code> is <code>-1</code>, not 1.`,
+        checks: [{ expr: "describe(0)" }, { expr: "describe(4)" }, { expr: "describe(7)" }, { expr: "describe(-2)" }, { expr: "describe(-3)" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Comparisons <code>=== !== &lt; &gt; &lt;= &gt;=</code> produce booleans. Use <code>===</code>, never <code>==</code>.</li>
+        <li><code>!</code>, <code>&amp;&amp;</code>, <code>||</code> combine booleans and short-circuit. Ranges need two comparisons.</li>
+        <li><code>if</code> / <code>else if</code> / <code>else</code>: the first true branch runs; order your conditions carefully.</li>
+        <li>Return comparisons directly from <code>is…</code> functions instead of <code>if (…) return true; else return false;</code>.</li>
+        <li>Falsy: <code>false, 0, "", null, undefined, NaN</code>. Everything else is truthy.</li>
+        <li><code>cond ? a : b</code> for short choices; <code>switch</code> for one value against many exact cases.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

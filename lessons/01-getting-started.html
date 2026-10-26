@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>01 · Getting Started — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 1 of 22</div>
+    <h1>01 · Getting Started: Git, GitHub &amp; Karel</h1>
+    <p class="lead">How this course works, your first lines of JavaScript, and the version-control workflow you'll use to hand in every lab.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-01">✏️ Practice this lesson → Lab 01 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>How this course works</h2>
+      <p>Every lesson is a page like this one: short explanations, followed by <strong>examples</strong> you can
+      run, change, and run again, and <strong>challenges</strong> where you write the code yourself and the page
+      checks it for you. Nothing needs to be installed — the JavaScript runs right here in your browser.</p>
+      <ul>
+        <li><strong>Examples</strong> run automatically when the page loads. Click into the code, change
+        something, and press <strong>▶ Run</strong> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>). <strong>Restore</strong>
+        puts the original back.</li>
+        <li><strong>Challenges</strong> come with a list of <strong>tests</strong>. Press <strong>▶ Run &amp; check</strong>;
+        each test turns green ✓ or red ✗, and a red one shows what your code produced next to what was expected.</li>
+        <li>Your code is <strong>saved in this browser</strong> as you type, so you can close the tab and come back.</li>
+        <li>If your program gets stuck in an endless loop, the page stops it after a moment and tells you —
+        you can't break anything.</li>
+      </ul>
+      <p>Each lesson ends with a <strong>lab</strong>: three graded problems you hand in through GitHub. Most of
+      this lesson is about that hand-in workflow, because you'll use it every week.</p>` },
+
+      { md: `<h2>Your first program</h2>
+      <p>A program is a list of instructions the computer carries out <em>in order</em>, top to bottom.
+      The simplest useful instruction is <code>console.log(…)</code>, which prints a message to the
+      <strong>console</strong> — the dark box under the code. Text goes inside quotes; each statement ends
+      with a semicolon.</p>` },
+      { title: "Hello, world", code: `
+console.log("Hello, world!");
+console.log("Welcome to CSC 227.");
+` },
+      { md: `<p>Try it: change the message, add a third line, and press ▶ Run. Then try printing a number —
+      numbers don't need quotes, and <code>console.log</code> can do arithmetic for you.</p>` },
+      { title: "Numbers and arithmetic", code: `
+console.log(42);
+console.log(9 * 2);
+console.log("9 * 2 = " + (9 * 2));
+console.log("Several", "values", "at", "once:", 1, 2, 3);
+` },
+      { md: `<div class="callout warn"><strong>Spelling and punctuation matter.</strong> JavaScript is
+      case-sensitive (<code>Console.log</code> is not <code>console.log</code>), and quotes and parentheses
+      must come in matching pairs. When something is wrong, the console shows a red error message with a
+      line number. Read it — it is the single most useful clue you'll get.</div>` },
+      { title: "A mistake on purpose", expectError: true, code: `
+console.log("This line runs.");
+consol.log("This line has a typo.");
+console.log("This line never runs, because the program stopped at the error.");
+` },
+      { md: `<p>The error names the problem (<code>consol is not defined</code>) and the line (2). Fix the
+      typo and run it again — all three lines print.</p>` },
+
+      { title: "Say hello", prompt: `Print exactly <code>Hello, CSC 227!</code> to the console.`,
+        starter: `// Write one console.log statement below.\n`,
+        solution: `console.log("Hello, CSC 227!");`,
+        logs: true, checks: [] },
+      { title: "Three lines", prompt: `Print these three lines, in this order:
+        <pre class="code" data-lang="text">Name: Ada
+Course: CSC 227
+Goal: learn JavaScript</pre>`,
+        solution: `console.log("Name: Ada");\nconsole.log("Course: CSC 227");\nconsole.log("Goal: learn JavaScript");`,
+        logs: true, checks: [] },
+      { title: "Fix the typos", prompt: `This program should print <code>Ready</code>, then <code>Set</code>,
+        then <code>Go!</code>. It has three mistakes. Run it, read each error, and fix them one at a time.`,
+        starter: `console.log("Ready");\nconsole.Log("Set");\nconsole.log("Go!";`,
+        solution: `console.log("Ready");\nconsole.log("Set");\nconsole.log("Go!");`,
+        hint: `Look at the capital letter on line 2 and the parentheses on line 3. If the error is a
+        <em>SyntaxError</em>, JavaScript couldn't even read the program, so nothing printed at all.`,
+        logs: true, checks: [] },
+
+      { md: `<h2>Why version control?</h2>
+      <p>Real software is never finished. It is maintained for years, by many people, and every change risks
+      breaking something that used to work. A <strong>version control system</strong> (VCS) records every
+      change to a project's files so that you can:</p>
+      <ul>
+        <li><strong>Review</strong> what changed, when, by whom, and why — a complete history.</li>
+        <li><strong>Reverse</strong> a change that turned out to be a mistake, without losing other work.</li>
+        <li><strong>Share</strong> one project between many people without emailing files around.</li>
+        <li><strong>Branch</strong> — work on a new feature in parallel without disturbing the working version — and
+        <strong>fork</strong> — start your own copy of someone else's project.</li>
+      </ul>
+      <p><strong>Git</strong> is by far the most widely used VCS. It works for any files, not just code: documents,
+      data, even this course's lessons live in Git.</p>
+
+      <h2>Git versus GitHub</h2>
+      <table>
+        <tr><th></th><th>Git</th><th>GitHub</th></tr>
+        <tr><td>What it is</td><td>A program: the version database, plus the tools to read and change it</td>
+          <td>A website that hosts Git repositories and adds collaboration features</td></tr>
+        <tr><td>Where it runs</td><td>On your computer (and on servers)</td><td>In the cloud, at github.com</td></tr>
+        <tr><td>Adds</td><td>Commits, branches, merges, history</td><td>Pull requests, code review, issues, GitHub Pages (this site!)</td></tr>
+        <tr><td>Command line</td><td><code>git …</code></td><td><code>gh …</code> (the GitHub CLI)</td></tr>
+      </table>
+      <p>You use Git to record your work locally, then <em>push</em> it to GitHub to share it and get it reviewed.</p>
+
+      <h2>The vocabulary</h2>
+      <ul>
+        <li>A <strong>repository</strong> ("repo") is a project folder whose history Git tracks.</li>
+        <li>A <strong>commit</strong> is a snapshot of changes to specific files at a point in time. Every commit is
+        made by one author, has a message explaining it, and points to its <em>parent</em> commit — so the
+        commits form a history you can review or revert at any later point.</li>
+        <li>A <strong>branch</strong> is a named line of commits. Every repo has a main branch (usually called
+        <code>main</code>). You create a branch off <code>main</code> to collect a set of changes safely, then
+        <strong>merge</strong> it back when the changes are ready for everyone.</li>
+        <li>A <strong>pull request</strong> (PR) is GitHub's way of asking "please review my branch and merge it
+        into <code>main</code>".</li>
+        <li><strong>Clone</strong> copies a repo from GitHub to your computer; <strong>pull</strong> brings down
+        new commits; <strong>push</strong> sends your commits up.</li>
+      </ul>
+      <p>Here is a picture of a branch: <code>main</code> keeps moving while you work on <code>lab-02</code>,
+      and the merge brings your work back in.</p>
+      <pre class="code" data-lang="text">main:    A───B───────E───────M
+              \\             /
+lab-02:        C───D───────F</pre>` },
+
+      { md: `<h2>The professional workflow</h2>
+      <p>This is how changes move through a software team, and it's exactly how you'll hand in labs:</p>
+      <ol>
+        <li>Pull the current code from the <code>main</code> branch.</li>
+        <li>Build and run it to confirm it works <em>before</em> you change anything.</li>
+        <li>Create a branch and make your changes.</li>
+        <li>Build, run, and test again.</li>
+        <li>Commit to your branch and push it.</li>
+        <li>Open a <strong>pull request</strong> and ask a teammate (here: your instructor) to review it.</li>
+        <li>The reviewer reads the changes in the context of the whole program and leaves comments —
+        <strong>safety and correctness first, structure second, style last</strong>.</li>
+        <li>You address each comment: make the recommended change, make a different change and explain why,
+        or reply explaining why it isn't an issue (<em>push-back</em> is allowed when you have a reason).
+        Push the new commits to the same branch.</li>
+        <li>The reviewer re-checks — starting with what changed since the last review — and the cycle repeats
+        until they <strong>approve</strong>.</li>
+        <li>You <strong>squash</strong> your commits into one and <strong>merge</strong> it into <code>main</code>,
+        then delete the branch.</li>
+        <li>Confirm that any automated tests or deployments succeed.</li>
+      </ol>
+      <div class="callout tip"><strong>Code review is a conversation.</strong> A comment on your pull request is not
+      a judgment of you — it's how working engineers catch bugs and learn from each other. Reply to every comment,
+      even if the reply is just "Done".</div>` },
+
+      { md: `<h2>The command-line recipe</h2>
+      <p>Open a terminal in your repository folder. To <strong>start a change</strong> and open a pull request:</p>
+      <pre class="code" data-lang="text">cd ~/your-repo-dir
+git checkout main
+git pull                         # start from the latest main
+git checkout -b lab-02           # a new branch for this piece of work
+# … make changes, run and test them …
+git add .                        # stage every changed file
+git commit -m "Lab 02"           # record a snapshot with a message
+git push -u origin lab-02        # send the branch to GitHub
+gh pr create --fill              # open the pull request</pre>
+      <p>To <strong>address review comments</strong> and update the same pull request:</p>
+      <pre class="code" data-lang="text"># … make changes, run and test them …
+git add .
+git commit -m "Address review comments"
+git push</pre>
+      <p>When the pull request is <strong>approved</strong>, merge it on GitHub (choose <em>Squash and merge</em>),
+      delete the branch, and bring your local copy up to date:</p>
+      <pre class="code" data-lang="text">git checkout main
+git pull</pre>
+      <p>Useful commands for finding out where you are:</p>
+      <table>
+        <tr><th>Command</th><th>What it tells you</th></tr>
+        <tr><td><code>git status</code></td><td>Which branch you're on, and which files are changed or staged</td></tr>
+        <tr><td><code>git log --oneline</code></td><td>The commit history, one line per commit</td></tr>
+        <tr><td><code>git diff</code></td><td>Exactly what changed in your files since the last commit</td></tr>
+        <tr><td><code>git branch</code></td><td>All your local branches (the current one is starred)</td></tr>
+      </table>
+      <p>Keep GitHub's <a href="https://education.github.com/git-cheat-sheet-education.pdf">Git cheat sheet</a> handy.</p>
+      <div class="callout warn"><strong>Common Git mistakes.</strong>
+      Working directly on <code>main</code> instead of a branch (check with <code>git status</code> before you start);
+      forgetting to <code>git pull</code> first; committing without testing; and writing messages like "stuff" —
+      a commit message should say what the change does.</div>` },
+
+      { md: `<h2>How you'll hand in work in this course</h2>
+      <ul>
+        <li>Create your own GitHub account and a repository for this course from the
+        <code>student-template</code> (your instructor will share the link). It can be <strong>public</strong> — it
+        becomes part of your portfolio — or <strong>private</strong> and shared with your instructor.</li>
+        <li><strong>All</strong> of your work is committed to your own repository.</li>
+        <li><strong>Labs</strong> are handed in as a <strong>pull request</strong> on a branch named for the lab,
+        with your instructor as reviewer. Each lab page has a <strong>📋 Copy submission</strong> button that
+        produces the file to commit as <code>submissions/lab-NN.js</code>.</li>
+        <li>Grading follows the review: work that runs and has no outstanding comments earns full credit; work that
+        runs but has unresolved comments earns a little less; work that only mostly runs earns partial credit.
+        The due date is for <em>opening</em> the pull request — you can keep improving it afterwards.</li>
+      </ul>` },
+
+      { md: `<h2>Problem solving with Karel</h2>
+      <p>Before diving into JavaScript itself, the first weeks of the course warm up your problem-solving with
+      <strong>Karel</strong>, a robot that moves around a grid of streets and avenues, steering around walls and
+      picking up and putting down "beepers". Karel is programmed in real JavaScript, but with only a handful of
+      built-in commands (<code>move()</code>, <code>turnLeft()</code>, <code>pickBeeper()</code>, …), so you can
+      focus on <em>thinking</em> rather than on syntax.</p>
+      <p>You could solve any Karel problem with a long list of built-in commands. The real skill — and the fun —
+      is <strong>not</strong> repeating yourself, and instead designing your own higher-level commands:</p>
+      <pre class="code">// The long way: drive in a square.
+move(); turnLeft(); move(); turnLeft(); move(); turnLeft(); move(); turnLeft();
+
+// Better: name the repeated idea, then use it.
+function moveTurn() {
+  move();
+  turnLeft();
+}
+function square() {
+  for (let i = 0; i &lt; 4; i++) {
+    moveTurn();
+  }
+}</pre>
+      <p>This is <strong>top-down design</strong>: describe the whole task in a few big steps, then write each big step
+      in terms of smaller ones, until every step is something the computer already knows how to do. Karel also
+      introduces the two other ideas every program needs: <strong>tests and conditionals</strong> (for example
+      <code>frontIsClear()</code>, so Karel can decide what to do when there's a wall) and <strong>loops</strong>
+      (repeat until the job is done — "move right until the front is blocked, turn left, move until the right is
+      clear, turn right, move, …").</p>
+      <p>Work through the Karel lessons in their own course:
+      <a href="https://akennis.github.io/stanfordkarel-js-notebooks/"><strong>Learning JavaScript with Karel</strong></a>.
+      Everything you learn there — functions, <code>if</code>, <code>for</code>, <code>while</code> — is ordinary
+      JavaScript, and we'll meet it all again here, working with numbers, text, and web pages instead of a robot.</p>` },
+
+      { md: `<h2>Top-down design in plain JavaScript</h2>
+      <p>You don't need a robot to design top-down. This program prints a tiny recipe card. The top-level
+      steps read like an outline, and each one is a small named function. (Functions are the subject of
+      lesson 3 — for now, just notice how readable the last three lines are.)</p>` },
+      { title: "Outline first, details second", code: `
+function printTitle() {
+  console.log("=== Pancakes ===");
+}
+
+function printIngredients() {
+  console.log("1 cup flour");
+  console.log("1 cup milk");
+  console.log("1 egg");
+}
+
+function printSteps() {
+  console.log("1. Whisk everything together.");
+  console.log("2. Cook on a hot pan until bubbles form.");
+  console.log("3. Flip, cook one more minute, serve.");
+}
+
+printTitle();
+printIngredients();
+printSteps();
+` },
+      { title: "Add a step", prompt: `The recipe program above is copied into your editor. Add a function
+        <code>printServing()</code> that prints <code>Serves 2.</code>, and call it <em>between</em> the title
+        and the ingredients.`,
+        starter: `function printTitle() {\n  console.log("=== Pancakes ===");\n}\n\nfunction printIngredients() {\n  console.log("1 cup flour");\n  console.log("1 cup milk");\n  console.log("1 egg");\n}\n\nfunction printSteps() {\n  console.log("1. Whisk everything together.");\n  console.log("2. Cook on a hot pan until bubbles form.");\n  console.log("3. Flip, cook one more minute, serve.");\n}\n\nprintTitle();\nprintIngredients();\nprintSteps();`,
+        solution: `function printTitle() {\n  console.log("=== Pancakes ===");\n}\n\nfunction printServing() {\n  console.log("Serves 2.");\n}\n\nfunction printIngredients() {\n  console.log("1 cup flour");\n  console.log("1 cup milk");\n  console.log("1 egg");\n}\n\nfunction printSteps() {\n  console.log("1. Whisk everything together.");\n  console.log("2. Cook on a hot pan until bubbles form.");\n  console.log("3. Flip, cook one more minute, serve.");\n}\n\nprintTitle();\nprintServing();\nprintIngredients();\nprintSteps();`,
+        logs: true, checks: [{ label: "printServing is a function", expr: "typeof printServing" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Run examples, edit them, and break them on purpose — that's how you learn what each piece does.</li>
+        <li><code>console.log(…)</code> prints to the console; errors appear there in red with a line number.</li>
+        <li>Git records your project's history as <strong>commits</strong> on <strong>branches</strong>; GitHub hosts
+        it and adds <strong>pull requests</strong> and review.</li>
+        <li>The workflow: pull → branch → change → test → commit → push → pull request → review → squash &amp; merge.</li>
+        <li>Top-down design: describe the big steps first, then fill in each one with smaller steps.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

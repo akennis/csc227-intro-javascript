@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>18 · Ajax with XMLHttpRequest — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 18 of 22</div>
+    <h1>18 · Ajax with XMLHttpRequest</h1>
+    <p class="lead">Ask a web service for data while staying on the same page — and handle the answer, the errors, and the waiting.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-18">✏️ Practice this lesson → Lab 18 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+    import { courseApi } from "./mock-apis.js";
+
+    const mock = courseApi;
+
+    const cells = [
+      { md: `<h2>What Ajax is</h2>
+      <p><strong>Ajax</strong> (originally "Asynchronous JavaScript and XML") is the standard JavaScript mechanism for making
+      web requests <em>from an already-running page</em>, without navigating away. It's how a page retrieves, posts, and
+      maintains data on an external service: a weather widget fetching the forecast, a search box suggesting results, a
+      "like" button saving your like.</p>
+      <p>The classic tool is <code>XMLHttpRequest</code> (XHR). It:</p>
+      <ul>
+        <li>creates an <strong>asynchronous</strong> HTTP request to a server, asking for a URL;</li>
+        <li>fires <strong>events</strong> as progress is made (loaded, failed, timed out);</li>
+        <li>makes the <strong>response</strong> available once it arrives.</li>
+      </ul>
+      <p>Despite the name, today the data is almost always <strong>JSON</strong>, not XML.</p>
+      <div class="callout tip"><strong>About the examples.</strong> To keep results predictable, requests on this page are
+      answered by a small <em>pretend</em> server built into the course, which returns the same kind of data as the real
+      services. Examples marked <strong>use the real API</strong> can be switched to the real internet service.</div>` },
+
+      { md: `<h2>A little HTTP</h2>
+      <p>Every request names a <strong>URL</strong> and a <strong>method</strong> — <code>GET</code> to read data,
+      <code>POST</code> to send new data (also <code>PUT</code>, <code>DELETE</code>). Data for a GET goes in the URL's
+      <strong>query string</strong>, after <code>?</code>, as <code>name=value</code> pairs joined by <code>&amp;</code>:</p>
+      <pre class="code" data-lang="text">https://api.open-meteo.com/v1/forecast?latitude=41.4&amp;longitude=-74.4&amp;hourly=temperature_2m
+└─────────── host ──────────┘└─ path ──┘└──────────────── query string ────────────────┘</pre>
+      <p>The server's reply has a <strong>status code</strong> and a <strong>body</strong>:</p>
+      <table>
+        <tr><th>Status</th><th>Meaning</th></tr>
+        <tr><td>200 OK, 201 Created</td><td>success</td></tr>
+        <tr><td>400 Bad Request</td><td>your request was wrong (e.g. an invalid parameter)</td></tr>
+        <tr><td>401 / 403</td><td>not logged in / not allowed</td></tr>
+        <tr><td>404 Not Found</td><td>no such thing at that URL</td></tr>
+        <tr><td>500 Server Error</td><td>the server broke</td></tr>
+      </table>
+      <p>Anything 400 or above is an error — but note that the request itself still <em>completed</em>: the server answered.
+      That's different from a <strong>network error</strong>, where no answer arrived at all.</p>` },
+
+      { md: `<h2>The XHR recipe</h2>
+      <p>The critical steps, in order:</p>
+      <ol>
+        <li><strong>create</strong> the request object: <code>new XMLHttpRequest()</code>;</li>
+        <li><strong>listen</strong> for its events — at least <code>load</code>;</li>
+        <li><strong>initialise</strong> it: <code>req.open("GET", url, true)</code> (<code>true</code> = asynchronous);</li>
+        <li><strong>send</strong> it: <code>req.send()</code>;</li>
+        <li><strong>process the response</strong> in the <code>load</code> handler: check <code>status</code>, then
+        <code>JSON.parse(responseText)</code>.</li>
+      </ol>` },
+      { title: "Get one to-do item", mock, liveOk: true, code: `
+const req = new XMLHttpRequest();
+
+req.addEventListener("load", function (e) {
+  console.log("status:", e.target.status);
+  const todo = JSON.parse(e.target.responseText);
+  console.log("title:", todo.title, "| completed:", todo.completed);
+});
+
+req.open("GET", "https://jsonplaceholder.typicode.com/todos/3", true);
+req.send();
+console.log("request sent");
+` },
+      { md: `<p>Look at the order of the output: <code>request sent</code> prints <em>first</em>. <code>send()</code> doesn't wait
+      for the answer — it starts the request and returns immediately, and the program carries on. Later, when the response
+      arrives, the browser calls your <code>load</code> handler. That's what <strong>asynchronous</strong> means, and it's why
+      the result can only be used <em>inside</em> the handler.</p>` },
+      { title: "The result isn't there yet", mock, code: `
+let title = "(not loaded yet)";
+
+const req = new XMLHttpRequest();
+req.addEventListener("load", e => {
+  title = JSON.parse(e.target.responseText).title;
+  console.log("3. inside load:", title);
+});
+req.open("GET", "https://jsonplaceholder.typicode.com/todos/7", true);
+req.send();
+
+console.log("1. right after send:", title);
+setTimeout(() => console.log("2. 50 ms later, still:", title), 50);
+setTimeout(() => console.log("4. 500 ms later:", title), 500);
+` },
+
+      { md: `<h2>The weather example</h2>
+      <p>This is the original lecture example: the current temperature at a location you type in, from the free
+      <a href="https://open-meteo.com/">Open-Meteo</a> API. It handles all three outcomes — <code>load</code> (check the status!),
+      <code>error</code>, and <code>timeout</code> — and puts the answer on the page. Try a normal location; a latitude of 100
+      (a 400 error); and a timeout of 50 ms (the pretend server takes about a quarter of a second to answer).</p>` },
+      { title: "Current temperature", mock, liveOk: true, height: 230, html: `<h3>XmlHttpRequest example</h3>
+<label for="long">Longitude:</label>
+<input id="long" value="-74.4"><br>
+<label for="lat">Latitude:</label>
+<input id="lat" value="41.4"><br>
+<label for="timeout">Timeout:</label>
+<input id="timeout" value="5000"><br>
+<button id="getWeatherBtn">Get Weather</button>
+<p id="curTemp"></p>
+<p id="error"></p>`, code: `
+function main() {
+  function getWeatherHandler(e) {
+    const req = new XMLHttpRequest();
+    req.addEventListener("load", function (e) {
+      if (e.target.status >= 400) {
+        document.getElementById("error").innerHTML = \`error: status = \${e.target.status}\`;
+        document.getElementById("curTemp").innerHTML = "";
+        return;
+      }
+      const res = JSON.parse(e.target.responseText);
+      const curTemp = res.hourly.temperature_2m.at(-1);
+      document.getElementById("curTemp").innerHTML = \`Current temp is \${curTemp} C\`;
+      document.getElementById("error").innerHTML = "";
+    });
+    req.addEventListener("error", function (e) {
+      document.getElementById("error").innerHTML = e.type;
+      document.getElementById("curTemp").innerHTML = "";
+    });
+    req.addEventListener("timeout", function (e) {
+      document.getElementById("error").innerHTML = e.type;
+      document.getElementById("curTemp").innerHTML = "";
+    });
+    const long = document.getElementById("long").value;
+    const lat = document.getElementById("lat").value;
+    const timeout = Number(document.getElementById("timeout").value);
+    const reqUrl = \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`;
+    req.timeout = timeout;
+    req.open("GET", reqUrl, true);
+    req.send();
+  }
+  document.getElementById("getWeatherBtn").addEventListener("click", getWeatherHandler);
+}
+main();
+` },
+      { md: `<p>The critical points: creating, initialising, and sending the request; listening for the events; processing
+      the response. The lesser (but still important) points: timeout configuration and handling, and error handling. Notice
+      that a 400 response fires <code>load</code>, not <code>error</code> — your <code>load</code> handler has to check
+      <code>status</code> itself.</p>` },
+
+      { md: `<h2>Errors and timeouts</h2>` },
+      { title: "Three ways a request can go wrong", mock, code: `
+function get(url, timeout, label) {
+  const req = new XMLHttpRequest();
+  req.timeout = timeout;
+  req.addEventListener("load", e => {
+    if (e.target.status >= 400) {
+      console.log(label, "→ answered with an error status:", e.target.status, e.target.responseText);
+    } else {
+      console.log(label, "→ ok");
+    }
+  });
+  req.addEventListener("error", () => console.log(label, "→ network error: no answer at all"));
+  req.addEventListener("timeout", () => console.log(label, "→ gave up after", timeout, "ms"));
+  req.open("GET", url, true);
+  req.send();
+}
+
+get("https://jsonplaceholder.typicode.com/todos/1", 0, "good request");
+get("https://jsonplaceholder.typicode.com/todos/999", 0, "missing item");
+get("https://offline.example.com/data", 0, "server down");
+get("https://api.open-meteo.com/v1/forecast?latitude=10&longitude=10", 100, "too slow");
+` },
+      { md: `<p>Older code often uses <code>onreadystatechange</code> instead of <code>load</code>: it fires several times as
+      <code>readyState</code> goes from 1 (opened) to 4 (done), and the handler checks <code>readyState === 4</code>. You'll see
+      it in the wild; <code>load</code>/<code>error</code>/<code>timeout</code> are clearer.</p>` },
+
+      { md: `<h2>Sending data: POST</h2>
+      <p>To send JSON, set the method to <code>POST</code>, say what you're sending with a <code>Content-Type</code> header, and
+      pass the text to <code>send</code>. A successful create usually answers <code>201 Created</code>.</p>` },
+      { title: "POST a new post", mock, liveOk: true, code: `
+const req = new XMLHttpRequest();
+req.addEventListener("load", e => {
+  console.log("status:", e.target.status);
+  console.log("created:", JSON.parse(e.target.responseText));
+});
+req.open("POST", "https://jsonplaceholder.typicode.com/posts", true);
+req.setRequestHeader("Content-Type", "application/json");
+req.send(JSON.stringify({ title: "Hello", body: "My first post", userId: 1 }));
+` },
+
+      { md: `<h2>Call chaining, and why it hurts</h2>
+      <p>Often several requests must happen in sequence, each using the previous answer — for example, get a team's lineup,
+      then the stats of each player. With callbacks, every step nests inside the previous one's handler. Here's a small
+      helper, then the chain:</p>` },
+      { title: "Callbacks inside callbacks", mock, code: `
+function getJson(url, onDone, onFail) {
+  const req = new XMLHttpRequest();
+  req.addEventListener("load", e => {
+    if (e.target.status >= 400) {
+      onFail("status " + e.target.status);
+    } else {
+      onDone(JSON.parse(e.target.responseText));
+    }
+  });
+  req.addEventListener("error", () => onFail("network error"));
+  req.open("GET", url, true);
+  req.send();
+}
+
+const API = "https://sports.example.com/api";
+getJson(API + "/teams/yankees/lineup", lineup => {
+  console.log("lineup:", lineup);
+  const stats = [];
+  for (const id of lineup) {
+    getJson(API + "/players/" + id, player => {
+      stats.push(player.name + " (" + player.hr + " HR)");
+      if (stats.length === lineup.length) {
+        console.log("all players loaded:", stats);
+      }
+    }, err => console.log("player failed:", err));
+  }
+}, err => console.log("lineup failed:", err));
+` },
+      { md: `<p>It works, but it's tedious, error-prone, and hard to maintain: errors must be handled at every level, the order
+      the players arrive in isn't guaranteed, and each extra step nests deeper. The next lesson replaces all of this with
+      <code>fetch</code>, promises, and <code>async</code>/<code>await</code>.</p>
+      <div class="callout warn"><strong>Other things to know.</strong> Browsers only let a page read responses from another site
+      if that site allows it (<em>CORS</em>) — public APIs like Open-Meteo do. Many APIs require an <em>API key</em>; never put
+      a secret key in front-end code, where anyone can read it.</div>` },
+
+      { md: `<h2>Challenges</h2>
+      <p>These run against the course's pretend server. Because answers arrive later, your functions take a
+      <strong>callback</strong> and call it with the result instead of returning it.</p>` },
+      { title: "Fetch a to-do title", mock, prompt: `Write <code>getTodoTitle(id, callback)</code> that requests
+        <code>https://jsonplaceholder.typicode.com/todos/ID</code> with XHR and calls <code>callback(title)</code> with the item's
+        <code>title</code>.`,
+        starter: `function getTodoTitle(id, callback) {\n\n}`,
+        solution: `function getTodoTitle(id, callback) {\n  const req = new XMLHttpRequest();\n  req.addEventListener("load", e => {\n    callback(JSON.parse(e.target.responseText).title);\n  });\n  req.open("GET", "https://jsonplaceholder.typicode.com/todos/" + id, true);\n  req.send();\n}`,
+        checks: [
+          { label: "getTodoTitle(3, …)", run: `return await new Promise(r => getTodoTitle(3, r));` },
+          { label: "getTodoTitle(42, …)", run: `return await new Promise(r => getTodoTitle(42, r));` },
+        ] },
+      { title: "Status codes", mock, prompt: `Write <code>getStatus(url, callback)</code> calling <code>callback(status)</code> with
+        the response's status code, or <code>callback("network error")</code> if no answer arrives.`,
+        starter: `function getStatus(url, callback) {\n\n}`,
+        solution: `function getStatus(url, callback) {\n  const req = new XMLHttpRequest();\n  req.addEventListener("load", e => callback(e.target.status));\n  req.addEventListener("error", () => callback("network error"));\n  req.open("GET", url, true);\n  req.send();\n}`,
+        checks: [
+          { label: "an existing to-do", run: `return await new Promise(r => getStatus("https://jsonplaceholder.typicode.com/todos/1", r));` },
+          { label: "a missing to-do", run: `return await new Promise(r => getStatus("https://jsonplaceholder.typicode.com/todos/500", r));` },
+          { label: "an offline server", run: `return await new Promise(r => getStatus("https://offline.example.com/x", r));` },
+        ] },
+      { title: "Current temperature", mock, prompt: `Write <code>getTemp(lat, long, onDone, onError)</code> using the Open-Meteo URL
+        from the lesson. Call <code>onDone(t)</code> with the <strong>last</strong> hourly temperature; for a status of 400 or more call
+        <code>onError("status " + status)</code>; for a network error call <code>onError("network")</code>.`,
+        starter: `function getTemp(lat, long, onDone, onError) {\n\n}`,
+        solution: `function getTemp(lat, long, onDone, onError) {\n  const req = new XMLHttpRequest();\n  req.addEventListener("load", e => {\n    if (e.target.status >= 400) {\n      onError("status " + e.target.status);\n      return;\n    }\n    onDone(JSON.parse(e.target.responseText).hourly.temperature_2m.at(-1));\n  });\n  req.addEventListener("error", () => onError("network"));\n  req.open("GET", \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`, true);\n  req.send();\n}`,
+        checks: [
+          { label: "Middletown, NY", run: `return await new Promise(r => getTemp(41.4, -74.4, r, r));` },
+          { label: "the equator", run: `return await new Promise(r => getTemp(0, 0, r, r));` },
+          { label: "latitude 100", run: `return await new Promise(r => getTemp(100, 0, r, r));` },
+        ] },
+      { title: "Give up when slow", mock, prompt: `Write <code>getWithTimeout(url, ms, callback)</code>: it calls
+        <code>callback("ok")</code> if the response arrives (any status), <code>callback("timeout")</code> if it takes longer than
+        <code>ms</code> milliseconds, and <code>callback("error")</code> on a network error.`,
+        starter: `function getWithTimeout(url, ms, callback) {\n\n}`,
+        solution: `function getWithTimeout(url, ms, callback) {\n  const req = new XMLHttpRequest();\n  req.timeout = ms;\n  req.addEventListener("load", () => callback("ok"));\n  req.addEventListener("timeout", () => callback("timeout"));\n  req.addEventListener("error", () => callback("error"));\n  req.open("GET", url, true);\n  req.send();\n}`,
+        checks: [
+          { label: "fast enough", run: `return await new Promise(r => getWithTimeout("https://jsonplaceholder.typicode.com/todos/1", 1000, r));` },
+          { label: "too slow (100 ms limit)", run: `return await new Promise(r => getWithTimeout("https://api.open-meteo.com/v1/forecast?latitude=1&longitude=1", 100, r));` },
+          { label: "offline", run: `return await new Promise(r => getWithTimeout("https://offline.example.com/", 1000, r));` },
+        ] },
+      { title: "Weather on the page", mock, prompt: `When <code>#go</code> is clicked, request the temperature for the latitude and
+        longitude typed in <code>#lat</code> and <code>#long</code>. Show <code>Current temp is T C</code> in <code>#out</code> on
+        success, or <code>error: status = S</code> for a status of 400 or more.`,
+        html: `<label>Latitude <input id="lat" value="41.4"></label>
+<label>Longitude <input id="long" value="-74.4"></label>
+<button id="go">Get weather</button>
+<p id="out"></p>`,
+        starter: `document.getElementById("go").addEventListener("click", () => {\n\n});`,
+        solution: `document.getElementById("go").addEventListener("click", () => {\n  const lat = document.getElementById("lat").value;\n  const long = document.getElementById("long").value;\n  const out = document.getElementById("out");\n  const req = new XMLHttpRequest();\n  req.addEventListener("load", e => {\n    if (e.target.status >= 400) {\n      out.textContent = "error: status = " + e.target.status;\n      return;\n    }\n    const t = JSON.parse(e.target.responseText).hourly.temperature_2m.at(-1);\n    out.textContent = "Current temp is " + t + " C";\n  });\n  req.open("GET", \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`, true);\n  req.send();\n});`,
+        checks: [
+          { label: "41.4, -74.4", run: `_t.click("#go"); await _t.wait(700); return _t.text("#out");` },
+          { label: "latitude 95", run: `_t.type("#lat", 95); _t.click("#go"); await _t.wait(700); return _t.text("#out");` },
+        ] },
+      { title: "POST and report the id", mock, prompt: `Write <code>createPost(title, callback)</code> that POSTs
+        <code>{ title, userId: 1 }</code> as JSON to <code>https://jsonplaceholder.typicode.com/posts</code> and calls
+        <code>callback(id)</code> with the new post's <code>id</code> when the status is 201.`,
+        starter: `function createPost(title, callback) {\n\n}`,
+        solution: `function createPost(title, callback) {\n  const req = new XMLHttpRequest();\n  req.addEventListener("load", e => {\n    if (e.target.status === 201) {\n      callback(JSON.parse(e.target.responseText).id);\n    }\n  });\n  req.open("POST", "https://jsonplaceholder.typicode.com/posts", true);\n  req.setRequestHeader("Content-Type", "application/json");\n  req.send(JSON.stringify({ title, userId: 1 }));\n}`,
+        checks: [{ label: "createPost(\"Hi\", …)", run: `return await new Promise(r => createPost("Hi", r));` }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Ajax requests data from a server without leaving the page; XHR is the classic API.</li>
+        <li>Recipe: <code>new XMLHttpRequest()</code> → <code>addEventListener("load" | "error" | "timeout")</code> → <code>open(method, url, true)</code> → <code>send()</code>.</li>
+        <li>It's asynchronous: <code>send</code> returns immediately; use the result inside the handler.</li>
+        <li>Check <code>status</code> in <code>load</code> — 4xx/5xx still "load"; network failures fire <code>error</code>.</li>
+        <li>Parse JSON with <code>JSON.parse(e.target.responseText)</code>; POST JSON with a <code>Content-Type</code> header.</li>
+        <li>Chained callbacks get deep and messy — next lesson fixes that.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

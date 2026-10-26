@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Ada Lovelace",
+    "github": "ada",
+    "repoUrl": "https://github.com/ada/csc227-labs.git"
+  },
+  {
+    "name": "Alan Turing",
+    "github": "aturing",
+    "repoUrl": "https://github.com/aturing/csc227-labs.git"
+  }
+]

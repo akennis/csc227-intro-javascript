@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>03 · Functions — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 3 of 22</div>
+    <h1>03 · Functions</h1>
+    <p class="lead">Name a piece of logic once, then use it anywhere: inputs in, a result out.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-03">✏️ Practice this lesson → Lab 03 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>What a function is</h2>
+      <p>A <strong>function</strong> is a named grouping of logic that takes input data and does something useful
+      with it. You <em>define</em> it once and <em>call</em> it as many times as you like. Functions let you:</p>
+      <ul>
+        <li><strong>reuse</strong> logic instead of copying it,</li>
+        <li><strong>name</strong> an idea, so programs read like a description of what they do, and</li>
+        <li><strong>break a big problem into small ones</strong> — the top-down design from lesson 1.</li>
+      </ul>
+      <p>The basic syntax:</p>
+      <pre class="code">function fnName(param1, param2, paramN) {
+  statement1;
+  statement2;
+  return result;
+}</pre>
+      <p>The names in parentheses are <strong>parameters</strong>: variables that receive the input. The values you
+      pass when you call the function are <strong>arguments</strong>. <code>return</code> sends a result back to
+      whoever called it.</p>` },
+      { title: "Celsius to Fahrenheit", code: `
+function cToF(c) {
+  return c * 9 / 5 + 32;
+}
+
+console.log(cToF(0));
+console.log(cToF(100));
+console.log(cToF(37));
+const bodyTemp = cToF(37);
+console.log("Body temperature: " + bodyTemp + "°F");
+` },
+      { md: `<p>When <code>cToF(100)</code> runs, the parameter <code>c</code> becomes <code>100</code>, the body
+      computes <code>100 * 9 / 5 + 32</code>, and <code>return</code> hands <code>212</code> back — so the call
+      <code>cToF(100)</code> is replaced by <code>212</code> wherever it appears. A call is just an expression, so it
+      can be stored, printed, or used inside a bigger calculation.</p>` },
+      { title: "Several parameters", code: `
+function average(x, y, z) {
+  return (x + y + z) / 3;
+}
+
+function rectangleArea(width, height) {
+  return width * height;
+}
+
+console.log(average(80, 90, 100));
+console.log(rectangleArea(7, 4));
+console.log(rectangleArea(2, 3) + rectangleArea(4, 5));
+` },
+      { md: `<div class="callout warn"><strong>Order matters, names don't.</strong> Arguments are matched to
+      parameters by <em>position</em>. <code>rectangleArea(4, 7)</code> sets <code>width</code> to 4 no matter what
+      the variables you pass are called. Pass too few arguments and the missing parameters are
+      <code>undefined</code>; pass too many and the extras are ignored.</div>` },
+      { title: "Missing arguments", code: `
+function describe(name, age) {
+  return name + " is " + age;
+}
+
+console.log(describe("Rover", 8));
+console.log(describe("Rover"));          // age is undefined
+console.log(describe("Rover", 8, "extra"));
+` },
+
+      { md: `<h2>return versus console.log</h2>
+      <p>This is the single most common confusion with functions. <code>console.log</code> <em>shows</em> a value
+      to a human; <code>return</code> <em>gives</em> a value back to the program. A function that only logs gives its
+      caller nothing — its call evaluates to <code>undefined</code>.</p>` },
+      { title: "Logging is not returning", code: `
+function squareAndLog(x) {
+  console.log(x * x);
+}
+
+function square(x) {
+  return x * x;
+}
+
+const a = squareAndLog(5);   // prints 25, but returns nothing
+const b = square(5);         // prints nothing, returns 25
+console.log("a is", a);
+console.log("b is", b);
+console.log("b + 1 is", b + 1);
+` },
+      { md: `<p><code>return</code> also <strong>ends the function immediately</strong> — any lines after it in the same
+      run are skipped.</p>` },
+      { title: "return stops the function", code: `
+function firstWord() {
+  return "first";
+  console.log("this is never reached");
+}
+console.log(firstWord());
+` },
+
+      { md: `<h2>Functions calling functions</h2>
+      <p>Functions are built from other functions. A small helper like <code>log</code> can wrap a built-in, and
+      <code>outputF</code> composes two steps — convert, then show:</p>` },
+      { title: "Composition", code: `
+function cToF(c) {
+  return c * 9 / 5 + 32;
+}
+
+function log(s) {
+  console.log(s);
+}
+
+function outputF(c) {
+  log(cToF(c));
+}
+
+outputF(0);
+outputF(100);
+outputF(-40);
+` },
+      { md: `<p>Read <code>log(cToF(c))</code> from the inside out: first <code>cToF(c)</code> runs and returns a
+      number, then that number is the argument to <code>log</code>.</p>` },
+      { title: "Building up", code: `
+function square(x) {
+  return x * x;
+}
+
+function hypotenuse(a, b) {
+  return Math.sqrt(square(a) + square(b));
+}
+
+function distance(x1, y1, x2, y2) {
+  return hypotenuse(x2 - x1, y2 - y1);
+}
+
+console.log(hypotenuse(3, 4));
+console.log(distance(1, 1, 4, 5));
+` },
+
+      { md: `<h2>Pure and impure functions</h2>
+      <p>Functions do one of two kinds of job:</p>
+      <ul>
+        <li><strong>Compute a result</strong> from their inputs. A <strong>pure function</strong> does only that: the
+        same inputs always give the same output, and nothing else in the world changes. <code>cToF</code>,
+        <code>square</code>, and <code>average</code> are pure.</li>
+        <li><strong>Cause a change</strong> in the environment — print something, change a web page, save a file,
+        update a variable outside the function. These are <strong>side effects</strong>, and a function that has
+        them is <em>impure</em>. <code>log</code> and <code>outputF</code> are impure.</li>
+      </ul>
+      <p>Real programs need both — a program with no side effects can't show you anything! The usual shape is
+      impure functions at the edges (reading input at the start, showing output at the end) and pure functions in
+      the middle doing the actual work. Prefer pure functions where you can: they're easier to test, because you
+      only have to check what they return.</p>
+      <div class="callout tip"><strong>Prefer small functions.</strong> A function should do one job you can describe
+      in a short sentence. When a function grows long, break it into smaller ones with good names — the long
+      function then reads like a summary of the small ones.</div>` },
+      { title: "Pure in the middle, impure at the edges", code: `
+// pure: compute
+function subtotal(price, quantity) {
+  return price * quantity;
+}
+function withTax(amount, rate) {
+  return amount * (1 + rate);
+}
+function roundCents(amount) {
+  return Math.round(amount * 100) / 100;
+}
+
+// impure: show
+function printReceipt(item, price, quantity) {
+  const total = roundCents(withTax(subtotal(price, quantity), 0.08));
+  console.log(quantity + " x " + item + " = $" + total);
+}
+
+printReceipt("notebook", 3.49, 4);
+printReceipt("pen", 1.25, 10);
+` },
+
+      { md: `<h2>Default parameters</h2>
+      <p>A parameter can have a <strong>default value</strong>, used when the caller leaves that argument out.</p>` },
+      { title: "Defaults", code: `
+function greet(name, greeting = "Hello") {
+  return greeting + ", " + name + "!";
+}
+
+console.log(greet("Ada"));
+console.log(greet("Ada", "Welcome"));
+
+function power(base, exponent = 2) {
+  return base ** exponent;
+}
+console.log(power(5), power(2, 10));
+` },
+
+      { md: `<h2>Parameters are local</h2>
+      <p>Parameters, and variables declared inside a function, exist only while that call runs (they're scoped to
+      the function's block, exactly like lesson 2). Each call gets fresh ones.</p>` },
+      { title: "Local variables", expectError: true, code: `
+function double(n) {
+  const result = n * 2;
+  return result;
+}
+
+console.log(double(4));
+console.log(double(10));
+console.log(result);    // ReferenceError: result only exists inside double
+` },
+
+      { md: `<h2>Functions as values (a preview)</h2>
+      <p>You can also create a function and store it in a variable. This form — a <strong>function
+      expression</strong> — behaves the same when called. You'll use it a lot later, especially in the shorter
+      <em>arrow</em> form; lesson 17 covers both in depth.</p>` },
+      { title: "Function expressions", code: `
+const sayHello = function (name) {
+  return \`Hello \${name}\`;
+};
+
+const shout = (text) => text.toUpperCase() + "!";
+
+console.log(sayHello("Albert"));
+console.log(shout("hello"));
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Fahrenheit to Celsius", prompt: `Write <code>fToC(f)</code> that converts Fahrenheit to Celsius:
+        subtract 32, then multiply by 5/9.`,
+        starter: `function fToC(f) {\n  // your code here\n}`,
+        solution: `function fToC(f) {\n  return (f - 32) * 5 / 9;\n}`,
+        checks: [{ expr: "fToC(32)" }, { expr: "fToC(212)" }, { expr: "fToC(-40)" }, { expr: "fToC(98.6)" }] },
+      { title: "Average of four", prompt: `Write <code>average4(a, b, c, d)</code> returning the average of its
+        four arguments.`,
+        solution: `function average4(a, b, c, d) {\n  return (a + b + c + d) / 4;\n}`,
+        starter: `function average4(a, b, c, d) {\n\n}`,
+        checks: [{ expr: "average4(1, 2, 3, 4)" }, { expr: "average4(10, 10, 10, 10)" }, { expr: "average4(-5, 5, 0, 2)" }] },
+      { title: "Last, First", prompt: `Write <code>formatName(first, last)</code> that returns the name as
+        <code>"Last, First"</code> — for example <code>formatName("John", "Smith")</code> is <code>"Smith, John"</code>.`,
+        solution: `function formatName(first, last) {\n  return last + ", " + first;\n}`,
+        checks: [{ expr: `formatName("John", "Smith")` }, { expr: `formatName("Ada", "Lovelace")` }] },
+      { title: "A formula", prompt: `Write a function for the equation
+        <code>f(a, x, b, y) = ax² + by²</code>, named <code>f</code>.`,
+        solution: `function f(a, x, b, y) {\n  return a * x * x + b * y * y;\n}`,
+        checks: [{ expr: "f(1, 2, 3, 4)" }, { expr: "f(2, 0, 1, 1)" }, { expr: "f(0.5, 3, -1, 2)" }] },
+      { title: "Use your helpers", prompt: `<code>square</code> is written for you. Write
+        <code>sumOfSquares(a, b, c)</code> that <strong>calls</strong> <code>square</code> three times and returns the
+        sum.`,
+        starter: `function square(x) {\n  return x * x;\n}\n\nfunction sumOfSquares(a, b, c) {\n\n}`,
+        solution: `function square(x) {\n  return x * x;\n}\n\nfunction sumOfSquares(a, b, c) {\n  return square(a) + square(b) + square(c);\n}`,
+        checks: [{ expr: "sumOfSquares(1, 2, 3)" }, { expr: "sumOfSquares(0, 0, 5)" }] },
+      { title: "Return, don't log", prompt: `<code>circleArea</code> prints its answer instead of returning it, so
+        <code>twoCircles</code> gets <code>NaN</code>. Fix <code>circleArea</code> so it <strong>returns</strong> the area
+        (π r²) and prints nothing.`,
+        starter: `function circleArea(r) {\n  console.log(Math.PI * r * r);\n}\n\nfunction twoCircles(r1, r2) {\n  return circleArea(r1) + circleArea(r2);\n}`,
+        solution: `function circleArea(r) {\n  return Math.PI * r * r;\n}\n\nfunction twoCircles(r1, r2) {\n  return circleArea(r1) + circleArea(r2);\n}`,
+        logs: true,
+        checks: [{ expr: "circleArea(1)" }, { expr: "circleArea(2)" }, { expr: "twoCircles(1, 2)" }] },
+      { title: "Seconds to a clock", prompt: `Write <code>clock(totalSeconds)</code> that returns a string like
+        <code>"1:02:03"</code> (hours:minutes:seconds) for 3723 seconds. Write a helper
+        <code>twoDigits(n)</code> that returns <code>"07"</code> for 7 and <code>"42"</code> for 42 — use
+        <code>String(n).padStart(2, "0")</code> — and use it for the minutes and seconds.`,
+        starter: `function twoDigits(n) {\n\n}\n\nfunction clock(totalSeconds) {\n\n}`,
+        solution: `function twoDigits(n) {\n  return String(n).padStart(2, "0");\n}\n\nfunction clock(totalSeconds) {\n  const hours = Math.floor(totalSeconds / 3600);\n  const minutes = Math.floor((totalSeconds % 3600) / 60);\n  const seconds = totalSeconds % 60;\n  return hours + ":" + twoDigits(minutes) + ":" + twoDigits(seconds);\n}`,
+        hint: `There are 3600 seconds in an hour. <code>totalSeconds % 3600</code> is what's left over after the whole
+        hours; divide that by 60 (and round down) for the minutes.`,
+        checks: [{ expr: "twoDigits(7)" }, { expr: "twoDigits(42)" }, { expr: "clock(3723)" }, { expr: "clock(59)" }, { expr: "clock(36000)" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>function name(params) { … return value; }</code> defines a function; <code>name(args)</code> calls it.</li>
+        <li>Arguments match parameters by position; missing ones are <code>undefined</code> unless they have a default.</li>
+        <li><code>return</code> gives a value back and ends the call; <code>console.log</code> only shows a value.</li>
+        <li>Build functions from smaller functions; read nested calls from the inside out.</li>
+        <li>Pure functions only compute; impure ones cause side effects. Keep the pure ones in the middle.</li>
+        <li>Parameters and variables inside a function are local to each call.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

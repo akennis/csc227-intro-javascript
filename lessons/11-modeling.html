@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>11 · Modeling Systems with Data — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 11 of 22</div>
+    <h1>11 · Modeling Systems with Data</h1>
+    <p class="lead">Describe a piece of the real world as objects, then make it evolve with functions — a simulation.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-11">✏️ Practice this lesson → Lab 11 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Programs model the world</h2>
+      <p>Many programs attempt to <strong>model</strong> a real-world system:</p>
+      <ul>
+        <li>video games — sports games, card games;</li>
+        <li>a restaurant reservation system;</li>
+        <li>a school information system.</li>
+      </ul>
+      <p>Many others model <em>and control</em> real systems:</p>
+      <ul>
+        <li>vehicle control — climate, speed, steering, collision avoidance;</li>
+        <li>home automation — lights, climate, security;</li>
+        <li>power generation; manufacturing — robots, inventory, shipping.</li>
+      </ul>
+      <h2>Designing a model</h2>
+      <p>Designing a model means identifying three things:</p>
+      <ol>
+        <li>the <strong>objects</strong> (components) of the system,</li>
+        <li>their <strong>relationships</strong> — how many of what, and what is connected to what, and</li>
+        <li>their <strong>evolution</strong> over time — the events that change the system.</li>
+      </ol>
+      <table>
+        <tr><th></th><th>Card game</th><th>Vehicle climate control</th></tr>
+        <tr><td>Objects</td><td>deck, cards, table, players, chips, dealer, round</td><td>user, heater, air conditioner, temperature sensors, control panel</td></tr>
+        <tr><td>Relationships</td><td>52 cards per deck; 5 decks per table; 1 dealer and 4 players per table; chips per player; cards and bets per player per round</td><td>heater and A/C activated by the panel; never both at once; panel reads several sensors</td></tr>
+        <tr><td>Evolution</td><td>cards dealt and collected; chips bet and won; players join and leave</td><td>system switched on; target changed; room too cold or too hot; heater or A/C switched</td></tr>
+      </table>
+      <p>The simplest way to program a model keeps <strong>data and functions separate</strong>:</p>
+      <ol>
+        <li>initialise plain JavaScript objects that describe the system's starting <strong>state</strong>;</li>
+        <li>run functions that modify those objects — each one an event or a time step;</li>
+        <li>keep going until the simulation is complete.</li>
+      </ol>` },
+
+      { md: `<h2>A motor control system</h2>
+      <p>Spin a motor until a sensor reports a hit. Three objects: a <code>motor</code> (speed, direction, angle), a
+      <code>sensor</code> (target angle, state), and a <code>controller</code> that <em>contains</em> both — a relationship
+      expressed by nesting. Each pass of the loop is one time step.</p>` },
+      { title: "Spin until the sensor hits", code: `
+// simple motor control system - spin motor until sensor indicates a hit
+function turnOn(c) {
+  c.state = "on";
+}
+
+function turnOff(c) {
+  c.state = "off";
+}
+
+function advanceMotor(m) {
+  m.angle += m.speed;
+}
+
+function updateSensor(s, m) {
+  if (s.target === m.angle) {
+    s.state = "hit";
+  } else {
+    s.state = "no hit";
+  }
+}
+
+function main() {
+  const motor = {
+    speed: 1.0,
+    direction: "clockwise",
+    angle: 0.0,
+  };
+  const sensor = {
+    target: 5.0,
+    state: "no hit",
+  };
+  const controller = {
+    state: "off",
+    motor: motor,
+    sensor: sensor,
+  };
+  turnOn(controller);
+  console.log(JSON.stringify(controller));
+  while (controller.sensor.state !== "hit") {
+    advanceMotor(controller.motor);
+    updateSensor(controller.sensor, controller.motor);
+    console.log(JSON.stringify(controller));
+  }
+  turnOff(controller);
+  console.log(JSON.stringify(controller));
+}
+
+main();
+` },
+      { md: `<p><code>JSON.stringify(controller)</code> prints the whole state each step — a cheap but very effective way to
+      watch a simulation. (Add <code>null, 2</code> as extra arguments for a pretty-printed, multi-line version.)</p>
+      <div class="callout warn"><strong>Exact equality and decimals don't mix.</strong> The loop stops only when the angle
+      is <em>exactly</em> 5.0. Change <code>speed</code> to <code>0.3</code> and run it: the angle goes 4.8, 5.1, … and never
+      equals 5, so the loop never ends (this page stops it). Real controllers test a range —
+      <code>m.angle &gt;= s.target</code> — rather than exact equality. Try fixing it.</div>` },
+
+      { md: `<h2>A deck of cards</h2>
+      <p>Objects: a card is <code>{ suit, rank }</code>; a deck is an array of 52 cards; a hand is an array too. Events:
+      shuffle, deal. Notice how each function does one job on the data it's given.</p>` },
+      { title: "Make, shuffle, deal", code: `
+const SUITS = ["♠", "♥", "♦", "♣"];
+const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
+function makeDeck() {
+  const deck = [];
+  for (const suit of SUITS) {
+    for (const rank of RANKS) {
+      deck.push({ suit, rank });
+    }
+  }
+  return deck;
+}
+
+// Fisher-Yates: swap each position with a random earlier-or-equal one
+function shuffle(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+function deal(deck, n) {
+  const hand = [];
+  for (let i = 0; i < n; i++) {
+    hand.push(deck.pop());
+  }
+  return hand;
+}
+
+function show(cards) {
+  return cards.map(c => c.rank + c.suit).join(" ");
+}
+
+const deck = makeDeck();
+console.log(deck.length, "cards; top three:", show(deck.slice(-3)));
+shuffle(deck);
+const players = [deal(deck, 5), deal(deck, 5)];
+players.forEach((hand, i) => console.log("player " + (i + 1) + ": " + show(hand)));
+console.log(deck.length, "cards left");
+` },
+      { md: `<p>The line <code>[deck[i], deck[j]] = [deck[j], deck[i]];</code> swaps two elements using
+      <em>destructuring</em> (more in lesson 16) — the same job as the three-line swap with a temporary variable.</p>
+      <p>Adding rules is adding functions. Here's the value of a hand in blackjack: number cards count their number, face
+      cards count 10, and an ace counts 11 unless that would bust the hand, in which case it counts 1.</p>` },
+      { title: "Scoring a hand", code: `
+function cardValue(card) {
+  if (card.rank === "A") {
+    return 11;
+  }
+  if (["J", "Q", "K"].includes(card.rank)) {
+    return 10;
+  }
+  return Number(card.rank);
+}
+
+function handValue(hand) {
+  let total = 0;
+  let aces = 0;
+  for (const card of hand) {
+    total += cardValue(card);
+    if (card.rank === "A") {
+      aces++;
+    }
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;          // count one ace as 1 instead of 11
+    aces--;
+  }
+  return total;
+}
+
+console.log(handValue([{ rank: "K", suit: "♠" }, { rank: "7", suit: "♥" }]));
+console.log(handValue([{ rank: "A", suit: "♠" }, { rank: "K", suit: "♥" }]));
+console.log(handValue([{ rank: "A", suit: "♠" }, { rank: "A", suit: "♥" }, { rank: "9", suit: "♦" }]));
+` },
+
+      { md: `<h2>State machines</h2>
+      <p>Many systems are always in exactly one of a few <strong>states</strong>, and events move them between states. A
+      map from state to next state models a traffic light compactly; a function applies one step.</p>` },
+      { title: "A traffic light", code: `
+const NEXT = { green: "yellow", yellow: "red", red: "green" };
+const DURATION = { green: 30, yellow: 5, red: 25 };
+
+const light = { state: "red", timeLeft: DURATION.red };
+
+function tick(light) {
+  light.timeLeft--;
+  if (light.timeLeft === 0) {
+    light.state = NEXT[light.state];
+    light.timeLeft = DURATION[light.state];
+  }
+}
+
+const seen = [];
+for (let second = 0; second < 120; second++) {
+  tick(light);
+  if (seen.at(-1) !== light.state) {
+    seen.push(light.state);
+    console.log("t=" + (second + 1) + "s: " + light.state);
+  }
+}
+` },
+
+      { md: `<h2>A climate control simulation</h2>
+      <p>The vehicle climate example, simulated minute by minute. Notice the rule "heater and A/C never run together" is
+      enforced in one place, <code>control</code>, and the physics is in another, <code>step</code>.</p>` },
+      { title: "Thermostat", code: `
+const cabin = { temp: 12, outside: 5 };
+const system = { on: true, target: 21, heater: false, ac: false };
+
+function control(sys, cabin) {
+  sys.heater = sys.on && cabin.temp < sys.target - 0.5;
+  sys.ac = sys.on && cabin.temp > sys.target + 0.5;
+}
+
+function step(cabin, sys) {
+  if (sys.heater) cabin.temp += 1.5;
+  if (sys.ac) cabin.temp -= 1.0;
+  cabin.temp += (cabin.outside - cabin.temp) * 0.05;   // heat leaks toward outside
+  cabin.temp = Math.round(cabin.temp * 10) / 10;
+}
+
+for (let minute = 1; minute <= 15; minute++) {
+  control(system, cabin);
+  step(cabin, system);
+  const mode = system.heater ? "heating" : system.ac ? "cooling" : "idle";
+  console.log("min " + String(minute).padStart(2) + ": " + cabin.temp + "°C  " + mode);
+}
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "A full deck", prompt: `Write <code>makeDeck()</code> returning 52 cards, each <code>{ suit, rank }</code>,
+        for every combination of the given <code>SUITS</code> and <code>RANKS</code> (suits in the outer loop).`,
+        starter: `const SUITS = ["♠", "♥", "♦", "♣"];\nconst RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];\n\nfunction makeDeck() {\n\n}`,
+        solution: `const SUITS = ["♠", "♥", "♦", "♣"];\nconst RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];\n\nfunction makeDeck() {\n  const deck = [];\n  for (const suit of SUITS) {\n    for (const rank of RANKS) {\n      deck.push({ suit, rank });\n    }\n  }\n  return deck;\n}`,
+        checks: [{ expr: "makeDeck().length" }, { expr: "makeDeck()[0]" }, { expr: "makeDeck()[51]" }, { expr: "makeDeck()[13]" }] },
+      { title: "Deal", prompt: `Write <code>deal(deck, n)</code>: remove <code>n</code> cards from the <strong>end</strong>
+        of <code>deck</code> (changing it) and return them as a new array, in the order removed. If the deck has fewer than
+        <code>n</code>, deal what's there.`,
+        solution: `function deal(deck, n) {\n  const hand = [];\n  for (let i = 0; i < n && deck.length > 0; i++) {\n    hand.push(deck.pop());\n  }\n  return hand;\n}`,
+        checks: [
+          { label: "deal 2 from [1,2,3,4]", run: "const d = [1, 2, 3, 4]; const h = deal(d, 2); return [h, d];" },
+          { label: "deal 5 from [1,2]", run: "const d = [1, 2]; const h = deal(d, 5); return [h, d];" },
+        ] },
+      { title: "Shuffle keeps every card", prompt: `Write <code>shuffle(deck)</code> that rearranges the array in place,
+        randomly (Fisher–Yates, as in the example). The tests can't predict a random order, so they check that the same
+        elements are still there and that the original array was changed in place.`,
+        solution: `function shuffle(deck) {\n  for (let i = deck.length - 1; i > 0; i--) {\n    const j = Math.floor(Math.random() * (i + 1));\n    [deck[i], deck[j]] = [deck[j], deck[i]];\n  }\n}`,
+        checks: [
+          { label: "same 52 numbers after shuffling", run: "const d = Array.from({ length: 52 }, (_, i) => i); shuffle(d); return [...d].sort((a, b) => a - b);" },
+          { label: "order changed (very likely)", run: "const d = Array.from({ length: 52 }, (_, i) => i); shuffle(d); return d.some((v, i) => v !== i);" },
+        ] },
+      { title: "Traffic light", prompt: `Write <code>nextState(state)</code> (green → yellow → red → green) and
+        <code>tick(light)</code>, which takes <code>{ state, timeLeft }</code>, subtracts 1 from <code>timeLeft</code>, and
+        when it reaches 0 moves to the next state and resets <code>timeLeft</code> from <code>DURATION</code>.`,
+        starter: `const DURATION = { green: 30, yellow: 5, red: 25 };\n\nfunction nextState(state) {\n\n}\n\nfunction tick(light) {\n\n}`,
+        solution: `const DURATION = { green: 30, yellow: 5, red: 25 };\n\nfunction nextState(state) {\n  const NEXT = { green: "yellow", yellow: "red", red: "green" };\n  return NEXT[state];\n}\n\nfunction tick(light) {\n  light.timeLeft--;\n  if (light.timeLeft === 0) {\n    light.state = nextState(light.state);\n    light.timeLeft = DURATION[light.state];\n  }\n}`,
+        checks: [
+          { expr: `nextState("green")` }, { expr: `nextState("red")` },
+          { label: "one tick from yellow, 2 left", run: `const l = { state: "yellow", timeLeft: 2 }; tick(l); return l;` },
+          { label: "one tick from yellow, 1 left", run: `const l = { state: "yellow", timeLeft: 1 }; tick(l); return l;` },
+          { label: "60 ticks from red, 25 left", run: `const l = { state: "red", timeLeft: 25 }; for (let i = 0; i < 60; i++) tick(l); return l;` },
+        ] },
+      { title: "Motor, with a tolerance", prompt: `Write <code>stepsToTarget(speed, target)</code>: start a motor at angle 0,
+        add <code>speed</code> each step, and return how many steps it takes until the angle is <strong>at least</strong>
+        <code>target</code>. (Unlike the example, this must work for speeds like 0.3.)`,
+        solution: `function stepsToTarget(speed, target) {\n  const motor = { angle: 0, speed };\n  let steps = 0;\n  while (motor.angle < target) {\n    motor.angle += motor.speed;\n    steps++;\n  }\n  return steps;\n}`,
+        checks: [{ expr: "stepsToTarget(1, 5)" }, { expr: "stepsToTarget(0.3, 5)" }, { expr: "stepsToTarget(2, 0)" }, { expr: "stepsToTarget(0.1, 1)" }] },
+      { title: "Bank account events", prompt: `An account is <code>{ owner, balance, history }</code>. Write
+        <code>deposit(acct, amount)</code> and <code>withdraw(acct, amount)</code>. Each changes the balance and pushes a
+        string onto <code>history</code>: <code>"deposit 50"</code> / <code>"withdraw 20"</code>. A withdrawal larger than
+        the balance does nothing to the balance and pushes <code>"declined 500"</code>. Both return the new balance.`,
+        solution: `function deposit(acct, amount) {\n  acct.balance += amount;\n  acct.history.push("deposit " + amount);\n  return acct.balance;\n}\n\nfunction withdraw(acct, amount) {\n  if (amount > acct.balance) {\n    acct.history.push("declined " + amount);\n  } else {\n    acct.balance -= amount;\n    acct.history.push("withdraw " + amount);\n  }\n  return acct.balance;\n}`,
+        checks: [
+          { label: "deposit 50, withdraw 20, withdraw 500", run: `const a = { owner: "Ada", balance: 100, history: [] }; const r = [deposit(a, 50), withdraw(a, 20), withdraw(a, 500)]; return [r, a];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Model a system by its <strong>objects</strong>, their <strong>relationships</strong>, and its <strong>evolution</strong> over time.</li>
+        <li>Represent state as plain objects and arrays; nest objects to express "contains".</li>
+        <li>Each event or time step is a function that updates the state; a loop runs the simulation.</li>
+        <li>Log state with <code>JSON.stringify</code> to watch it evolve.</li>
+        <li>Prefer range tests (<code>&gt;=</code>) to exact equality with decimal values.</li>
+        <li>State machines: a map from each state to the next.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

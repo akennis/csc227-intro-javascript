@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSC 227 · Introduction to JavaScript</title>
+  <style>
+    :root{ --ink:#1a1a1a; --muted:#666; --line:#e5e7eb; --accent:#0b5fff; }
+    *{box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      color:var(--ink);background:#fafafa;margin:0;line-height:1.6;}
+    .wrap{max-width:52rem;margin:0 auto;padding:3rem 1.25rem 4rem;}
+    .crumb{font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);}
+    h1{margin:.3rem 0 .4rem;font-size:2.1rem;}
+    .lead{margin:0 0 .5rem;color:var(--muted);font-size:1.1rem;}
+    .intro{margin:1.4rem 0 2rem;}
+    .intro code{background:#eef1f4;padding:.1em .35em;border-radius:4px;font-size:.92em;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+    h2{font-size:1.15rem;margin:2rem 0 .75rem;}
+    ol.toc{list-style:none;margin:0;padding:0;counter-reset:lesson;}
+    ol.toc li{margin:0;}
+    ol.toc a{display:flex;gap:1rem;align-items:baseline;text-decoration:none;color:inherit;
+      padding:.85rem 1rem;border:1px solid var(--line);border-radius:8px;margin-bottom:.55rem;
+      background:#fff;transition:border-color .15s, box-shadow .15s;}
+    ol.toc a:hover{border-color:var(--accent);box-shadow:0 1px 6px rgba(11,95,255,.08);}
+    ol.toc .num{counter-increment:lesson;flex:0 0 1.9rem;font-variant-numeric:tabular-nums;
+      font-weight:700;color:var(--accent);font-size:1.05rem;}
+    ol.toc .num::before{content:counter(lesson,decimal-leading-zero);}
+    ol.toc .body{flex:1;}
+    ol.toc .title{font-weight:600;font-size:1.02rem;}
+    ol.toc .desc{color:var(--muted);font-size:.9rem;}
+    ol.toc .title code{background:#eef1f4;padding:.05em .3em;border-radius:4px;
+      font-family:ui-monospace,monospace;font-size:.92em;font-weight:600;}
+    .foot{margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid var(--line);
+      color:var(--muted);font-size:.9rem;}
+    .foot a{color:var(--accent);text-decoration:none;} .foot a:hover{text-decoration:underline;}
+  </style>
+</head>
+</head>
+<body>
+  <div class="wrap">
+    <div class="crumb">CSC 227 · An introduction to programming in JavaScript</div>
+    <h1>Introduction to JavaScript</h1>
+    <p class="lead">Twenty-two notebook-style lessons that take you from your first variable to web APIs,
+      Node.js, and React — all in the browser.</p>
+
+    <p class="intro">No setup required. Every lesson mixes plain-English explanations with live
+      JavaScript you can edit and run right on the page, and inline <strong>challenges</strong> that check
+      your code as you go. Examples that work with web pages run in a small sandboxed page shown under
+      the code, so you can click the buttons and type into the inputs your program controls. Work through
+      the lessons in order — each builds on the one before — then practise with that lesson's lab.</p>
+
+    <h2 id="lessons">Part 1 · Foundations</h2>
+    <p class="intro" style="margin:.5rem 0 1rem;">From a first Git commit to variables, functions, decisions, and loops — the core of every program.</p>
+    <ol class="toc">
+      <li><a href="./lessons/01-getting-started.html"><span class="num"></span><span class="body">
+        <div class="title">Getting Started: Git, GitHub &amp; Karel</div>
+        <div class="desc">Version control, pull requests, and how this course's labs are submitted.</div></span></a></li>
+      <li><a href="./lessons/02-values-variables.html"><span class="num"></span><span class="body">
+        <div class="title">Values, Types &amp; Variables</div>
+        <div class="desc">Strings, numbers, booleans, <code>let</code> and <code>const</code>, <code>typeof</code>, and scope.</div></span></a></li>
+      <li><a href="./lessons/03-functions.html"><span class="num"></span><span class="body">
+        <div class="title">Functions</div>
+        <div class="desc">Parameters, return values, pure functions, and composing small functions.</div></span></a></li>
+      <li><a href="./lessons/04-console-debugger.html"><span class="num"></span><span class="body">
+        <div class="title">The Console &amp; the Debugger</div>
+        <div class="desc">Run code instantly, read error messages, and step through a program.</div></span></a></li>
+      <li><a href="./lessons/05-decisions.html"><span class="num"></span><span class="body">
+        <div class="title">Booleans &amp; Decisions</div>
+        <div class="desc">Comparison and logical operators, truthiness, and <code>if</code> / <code>else if</code> / <code>else</code>.</div></span></a></li>
+      <li><a href="./lessons/06-loops.html"><span class="num"></span><span class="body">
+        <div class="title">Loops</div>
+        <div class="desc"><code>while</code>, <code>for</code>, nested loops, and why locals beat globals.</div></span></a></li>
+    </ol>
+
+    <h2>Part 2 · Programs in the page &amp; data</h2>
+    <p class="intro" style="margin:.5rem 0 1rem;">Connect JavaScript to HTML, then organise data with strings, arrays, objects, and closures.</p>
+    <ol class="toc" style="counter-reset:lesson 6;">
+      <li><a href="./lessons/07-js-in-the-page.html"><span class="num"></span><span class="body">
+        <div class="title">JavaScript in the Page</div>
+        <div class="desc"><code>&lt;script&gt;</code>, external files, reading inputs, and handling button clicks.</div></span></a></li>
+      <li><a href="./lessons/08-strings.html"><span class="num"></span><span class="body">
+        <div class="title">Strings</div>
+        <div class="desc">Combine, compare, search, slice, split, and build text with template literals.</div></span></a></li>
+      <li><a href="./lessons/09-arrays.html"><span class="num"></span><span class="body">
+        <div class="title">Arrays</div>
+        <div class="desc">Ordered lists: indexing, push/pop, sorting, passing by reference, map/filter/reduce.</div></span></a></li>
+      <li><a href="./lessons/10-objects-maps.html"><span class="num"></span><span class="body">
+        <div class="title">Objects as Maps</div>
+        <div class="desc">Key/value lookup: add, update, delete, loop over keys, and pass objects to functions.</div></span></a></li>
+      <li><a href="./lessons/11-modeling.html"><span class="num"></span><span class="body">
+        <div class="title">Modeling Systems with Data</div>
+        <div class="desc">Describe a real system as objects, then evolve it with functions — a simulation.</div></span></a></li>
+      <li><a href="./lessons/12-closures.html"><span class="num"></span><span class="body">
+        <div class="title">Closures: Objects with Behavior</div>
+        <div class="desc">Constructor functions that bundle private data with the methods that use it.</div></span></a></li>
+    </ol>
+
+    <h2>Part 3 · The DOM, events &amp; functions</h2>
+    <p class="intro" style="margin:.5rem 0 1rem;">Change the page from code, respond to the user, handle errors, and treat functions as data.</p>
+    <ol class="toc" style="counter-reset:lesson 12;">
+      <li><a href="./lessons/13-dom-1.html"><span class="num"></span><span class="body">
+        <div class="title">The DOM I: From HTML to a Live Document</div>
+        <div class="desc">How the browser turns HTML into a tree of objects; finding, reading and changing elements, attributes, classes and forms.</div></span></a></li>
+      <li><a href="./lessons/14-dom-2.html"><span class="num"></span><span class="body">
+        <div class="title">The DOM II: Building &amp; Navigating the Tree</div>
+        <div class="desc">Create, insert, move, clone and remove nodes; render pages from data; walk the tree; work with the browser's rendering.</div></span></a></li>
+      <li><a href="./lessons/15-events.html"><span class="num"></span><span class="body">
+        <div class="title">Events</div>
+        <div class="desc"><code>addEventListener</code>, event targets, and handling many elements at once.</div></span></a></li>
+      <li><a href="./lessons/16-errors.html"><span class="num"></span><span class="body">
+        <div class="title">Multiple Returns &amp; Errors</div>
+        <div class="desc">Destructuring, errors as values, and exceptions with <code>try</code> / <code>catch</code>.</div></span></a></li>
+      <li><a href="./lessons/17-functional.html"><span class="num"></span><span class="body">
+        <div class="title">Functions as Data, Recursion &amp; Arrows</div>
+        <div class="desc">Store and pass functions, solve problems recursively, and write arrow functions.</div></span></a></li>
+    </ol>
+
+    <h2>Part 4 · Talking to the world</h2>
+    <p class="intro" style="margin:.5rem 0 1rem;">Call web APIs, wait without freezing, remember data, and meet Node.js and React.</p>
+    <ol class="toc" style="counter-reset:lesson 17;">
+      <li><a href="./lessons/18-ajax.html"><span class="num"></span><span class="body">
+        <div class="title">Ajax with XMLHttpRequest</div>
+        <div class="desc">Request data from a web API without leaving the page.</div></span></a></li>
+      <li><a href="./lessons/19-async-await.html"><span class="num"></span><span class="body">
+        <div class="title">Async / Await &amp; fetch</div>
+        <div class="desc">Promises, <code>await</code>, error handling, and parallel requests with <code>Promise.all</code>.</div></span></a></li>
+      <li><a href="./lessons/20-localstorage.html"><span class="num"></span><span class="body">
+        <div class="title">localStorage</div>
+        <div class="desc">Save key/value data in the browser so it survives a reload.</div></span></a></li>
+      <li><a href="./lessons/21-node.html"><span class="num"></span><span class="body">
+        <div class="title">Node.js</div>
+        <div class="desc">JavaScript outside the browser, and a tiny web server and API.</div></span></a></li>
+      <li><a href="./lessons/22-react-npm.html"><span class="num"></span><span class="body">
+        <div class="title">React &amp; npm</div>
+        <div class="desc">Components, JSX, props, and state — and how npm packages fit in.</div></span></a></li>
+    </ol>
+
+    <h2>Labs</h2>
+    <p class="intro" style="margin:.75rem 0 0;">Each lesson has a graded
+      <a href="./labs/index.html" style="color:var(--accent);text-decoration:none;">lab</a> of three
+      problems. Solve them in the browser, check them against the tests, then copy your submission into your
+      own GitHub repository and open a pull request — exactly the workflow from lesson 1.</p>
+
+    <h2>Playground &amp; reference</h2>
+    <p class="intro" style="margin:.75rem 0 0;">The
+      <a href="./playground.html" style="color:var(--accent);text-decoration:none;">Playground</a> is a blank
+      editor with a console and a page of your own HTML. The
+      <a href="./reference.html" style="color:var(--accent);text-decoration:none;">Reference</a> collects the
+      syntax and built-in functions the course covers on one page.</p>
+
+    <div class="foot">
+      Looking for the Karel warm-up from weeks 1–2? It lives in its own course:
+      <a href="https://akennis.github.io/stanfordkarel-js-notebooks/">Learning JavaScript with Karel</a>.
+    </div>
+  </div>
+
+  <script type="module" src="./site-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>22 · React &amp; npm — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 22 of 22</div>
+    <h1>22 · React &amp; npm</h1>
+    <p class="lead">Build user interfaces from components that react to data — and pull in other people's code with npm.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-22">✏️ Practice this lesson → Lab 22 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+    import { courseApi } from "./mock-apis.js";
+
+    const react = { libs: ["react"], jsx: true, html: `<div id="root"></div>` };
+    const wait = "await _t.wait(40); ";
+
+    const cells = [
+      { md: `<h2>What React is</h2>
+      <p><strong>React</strong> is a JavaScript library for building user interfaces (UIs) for web and native platforms. Its
+      primary goal is to minimise the bugs that occur when developers build UIs, by abstracting away much of the rendering work
+      (all the <code>createElement</code>, <code>textContent</code> and <code>classList</code> calls from lessons 13–14) and letting
+      developers concentrate on the UI design.</p>
+      <ul>
+        <li><strong>Components</strong> — a UI is built from reusable, independent pieces of code. Components can manage their
+        own state, and combine to form screens, pages, and apps.</li>
+        <li><strong>JSX</strong> — a syntax extension that lets you write HTML-like code inside JavaScript.</li>
+        <li><strong>Virtual DOM</strong> — React keeps an ideal representation of the UI in memory, compares it with the previous
+        one when data changes, and updates only the parts of the real DOM that differ. That makes pages render efficiently.</li>
+        <li><strong>Props</strong> — arguments passed into a component to configure how it renders, maintained outside it.</li>
+        <li><strong>State</strong> — data a component manages itself; changing it re-renders the component.</li>
+        <li><strong>Extensions</strong> — architecture libraries like Flux, and React Native for mobile apps.</li>
+        <li><strong>Open source</strong> — free under the MIT license, maintained by Meta (Facebook) and a community of developers.</li>
+      </ul>
+      <p>React is often combined with other technologies into a full-stack application — for example, a React front end calling a
+      Node API like the ones in lesson 21.</p>` },
+
+      { md: `<h2>React in a single HTML page</h2>
+      <p>The quickest way to experiment is one standalone HTML file: load React, ReactDOM, and Babel (which translates JSX into
+      plain JavaScript in the browser), then write your components in a <code>text/babel</code> script.</p>
+      <pre class="code" data-lang="html">&lt;div id="root"&gt;&lt;/div&gt;
+&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.development.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.development.js"&gt;&lt;/script&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/babel"&gt;
+  function App() {
+    return &lt;h1&gt;Hello, React!&lt;/h1&gt;;
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(&lt;App /&gt;);
+&lt;/script&gt;</pre>
+      <p>The examples below work the same way: the page loads React for you and translates your JSX before running it. Each
+      page has an empty <code>&lt;div id="root"&gt;</code> for React to fill.</p>` },
+
+      { md: `<h2>Components and JSX</h2>
+      <p>A component is a function whose name starts with a capital letter and that <strong>returns JSX</strong> describing what
+      to show. You use it like an HTML tag: <code>&lt;App /&gt;</code>. <code>createRoot(…).render(…)</code> puts it on the page.</p>` },
+      { title: "A first component", ...react, code: `
+function App() {
+  const name = "CSC 227";
+  const now = new Date(2024, 10, 4);
+  return (
+    <div>
+      <h1>Hello, {name}!</h1>
+      <p>Today is {now.toDateString()}. 6 × 7 = {6 * 7}.</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+` },
+      { md: `<h3>JSX rules</h3>
+      <ul>
+        <li><code>{ … }</code> drops any JavaScript <em>expression</em> into the markup — a variable, a calculation, a function call.</li>
+        <li>A component returns <strong>one</strong> root element; wrap siblings in a <code>&lt;div&gt;</code> or a fragment
+        <code>&lt;&gt;…&lt;/&gt;</code>. Wrap multi-line JSX in parentheses.</li>
+        <li>Attributes are camelCase JavaScript names: <code>className</code> (not <code>class</code>), <code>onClick</code>,
+        <code>htmlFor</code>. Styles are objects: <code>style={{ color: "red", fontSize: 20 }}</code>.</li>
+        <li>Every tag must be closed: <code>&lt;br /&gt;</code>, <code>&lt;img src="…" /&gt;</code>.</li>
+        <li>JSX is not HTML in a string — Babel turns <code>&lt;h1&gt;Hi&lt;/h1&gt;</code> into
+        <code>React.createElement("h1", null, "Hi")</code>. And text in <code>{…}</code> is always escaped, so user input can't
+        inject HTML.</li>
+      </ul>` },
+
+      { md: `<h2>Props</h2>
+      <p>Props are the arguments passed to a component for initialisation, written like HTML attributes. They let one component
+      render differently in different places. Props are maintained <em>outside</em> the component (by whoever renders it), and
+      the receiving component must never change them; when the provider changes a prop, the receiving component re-renders.</p>` },
+      { title: "Props make components reusable", ...react, code: `
+function Greeting({ name, excited = false }) {
+  return <h2>Hello, {name}{excited ? "!!!" : "."}</h2>;
+}
+
+function Card({ title, children }) {
+  return (
+    <div style={{ border: "1px solid #ccc", borderRadius: 8, padding: "0.5rem 1rem", marginBottom: 8 }}>
+      <h3 style={{ margin: 0 }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <>
+      <Greeting name="Ada" />
+      <Greeting name="Alan" excited={true} />
+      <Card title="About props">
+        <p>Whatever is between the tags arrives as the <code>children</code> prop.</p>
+      </Card>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+` },
+      { md: `<h3>Lists and conditions</h3>
+      <p>Render a list by <code>map</code>-ping an array to elements; give each one a unique <code>key</code> prop so React can
+      track it. Render conditionally with <code>&amp;&amp;</code> or the ternary operator.</p>` },
+      { title: "Lists, keys, conditional rendering", ...react, code: `
+const students = [
+  { id: 1, name: "Ada", gpa: 3.9 },
+  { id: 2, name: "Alan", gpa: 3.4 },
+  { id: 3, name: "Grace", gpa: 3.7 },
+];
+
+function StudentList({ students, minGpa }) {
+  const shown = students.filter(s => s.gpa >= minGpa);
+  if (shown.length === 0) {
+    return <p>Nobody qualifies.</p>;
+  }
+  return (
+    <ul>
+      {shown.map(s => (
+        <li key={s.id}>
+          {s.name} — {s.gpa.toFixed(1)} {s.gpa >= 3.8 && <strong>(honors)</strong>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <>
+    <StudentList students={students} minGpa={3.5} />
+    <StudentList students={students} minGpa={4.0} />
+  </>
+);
+` },
+
+      { md: `<h2>State</h2>
+      <p>State is data managed <em>within</em> a component, which the component can update itself. <code>useState(initial)</code>
+      returns the current value and a function to change it. Calling that setter makes React <strong>re-render</strong> the
+      component with the new value — you never touch the DOM yourself. Click the buttons:</p>` },
+      { title: "A counter", ...react, code: `
+function Counter({ step = 1 }) {
+  const [count, setCount] = React.useState(0);
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + step)}>+{step}</button>{" "}
+      <button onClick={() => setCount(count - step)} disabled={count === 0}>-{step}</button>{" "}
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <>
+    <Counter />
+    <Counter step={5} />
+  </>
+);
+` },
+      { md: `<p>Each <code>&lt;Counter&gt;</code> has its own independent state — just like the closures in lesson 12.</p>
+      <h3>Forms: controlled inputs</h3>
+      <p>For an input, keep its value in state, pass it as <code>value</code>, and update the state in <code>onChange</code>. The
+      state is then always the single source of truth for what's on screen.</p>` },
+      { title: "A controlled input", ...react, code: `
+function NameForm() {
+  const [name, setName] = React.useState("");
+  return (
+    <div>
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+      <p>{name === "" ? "Type your name." : \`Hello, \${name.trim()}! (\${name.length} characters)\`}</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<NameForm />);
+` },
+      { md: `<h3>Lifting state up</h3>
+      <p>State within one component can become a <strong>prop</strong> of another. When two components need the same data, move
+      the state up to their common parent and pass it down; when that state changes, both re-render. Children change it by
+      calling a function the parent passes down as a prop.</p>` },
+      { title: "State in the parent, props in the children", ...react, code: `
+function TemperatureInput({ label, value, onChange }) {
+  return (
+    <label style={{ display: "block" }}>
+      {label}: <input value={value} onChange={e => onChange(e.target.value)} />
+    </label>
+  );
+}
+
+function Converter() {
+  const [celsius, setCelsius] = React.useState("20");
+  const c = Number(celsius);
+  const f = Number.isNaN(c) ? "" : String(Math.round((c * 9 / 5 + 32) * 10) / 10);
+  return (
+    <div>
+      <TemperatureInput label="Celsius" value={celsius} onChange={setCelsius} />
+      <TemperatureInput label="Fahrenheit" value={f}
+        onChange={text => setCelsius(String(Math.round((Number(text) - 32) * 5 / 9 * 10) / 10))} />
+      <p>{c >= 30 ? "Hot!" : c <= 0 ? "Freezing!" : "Comfortable."}</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Converter />);
+` },
+      { md: `<h3>Effects: loading data</h3>
+      <p><code>useEffect(fn, [])</code> runs <code>fn</code> once after the component first appears — the place to start a
+      <code>fetch</code>. When the data arrives, store it in state and the component re-renders. (This one uses the course's
+      pretend weather server.)</p>` },
+      { title: "Fetching in a component", ...react, mock: courseApi, code: `
+function Weather({ lat, long, place }) {
+  const [temp, setTemp] = React.useState(null);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const resp = await fetch(\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`);
+        if (!resp.ok) throw new Error("status " + resp.status);
+        const data = await resp.json();
+        setTemp(data.hourly.temperature_2m.at(-1));
+      } catch (e) {
+        setError(e.message);
+      }
+    }
+    load();
+  }, [lat, long]);
+
+  if (error) return <p>{place}: error ({error})</p>;
+  if (temp === null) return <p>{place}: loading…</p>;
+  return <p>{place}: {temp} °C</p>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <>
+    <Weather place="Middletown, NY" lat={41.4} long={-74.4} />
+    <Weather place="Quito" lat={-0.2} long={-78.5} />
+    <Weather place="Nowhere" lat={123} long={0} />
+  </>
+);
+` },
+
+      { md: `<h2>npm: a real React app</h2>
+      <p>A single HTML page is great for quick experiments, but it's not how you'd build a larger application. Real apps are
+      <strong>projects</strong> on your computer, built with Node and <strong>npm</strong>, the Node Package Manager.</p>
+      <ul>
+        <li>npm hosts more than two million packages ready for your use, at <a href="https://www.npmjs.com/">npmjs.com</a>.</li>
+        <li>A project's <code>package.json</code> lists its name, its scripts, and its <strong>dependencies</strong> (packages and
+        version ranges). <code>npm install</code> downloads them all into <code>node_modules/</code> (never commit that folder —
+        put it in <code>.gitignore</code>).</li>
+        <li>Today the usual way to start a React app is <a href="https://vite.dev/">Vite</a>:
+        <pre class="code" data-lang="text">npm create vite@latest my-app -- --template react
+cd my-app
+npm install
+npm run dev        # starts a development server and prints its URL</pre>
+        (Older tutorials use Create React App, which is now deprecated. VS Code's
+        <a href="https://code.visualstudio.com/docs/nodejs/reactjs-tutorial">React tutorial</a> shows how to edit and debug a
+        React app in the editor.)</li>
+      </ul>
+      <h3>Using a package</h3>
+      <p>A small example package: <a href="https://www.npmjs.com/package/zip-state">zip-state</a>, which looks up the US state for
+      a ZIP code. Add it to your app by installing it, import it into your code, then call it from a component:</p>
+      <pre class="code" data-lang="text">npm i zip-state</pre>
+      <pre class="code">import zipState from 'zip-state';
+
+function Home() {
+  return &lt;h1&gt;Home {zipState('10924')}&lt;/h1&gt;;   // "Home NY"
+}</pre>
+      <p>A larger example: Microsoft's <a href="https://www.npmjs.com/package/@fluentui/react-components">Fluent UI</a> component
+      library, which gives you ready-made, styled components:</p>
+      <pre class="code" data-lang="text">npm i @fluentui/react-components</pre>
+      <pre class="code">import { FluentProvider, teamsLightTheme, Button } from '@fluentui/react-components';
+
+function App() {
+  return (
+    &lt;FluentProvider theme={teamsLightTheme}&gt;
+      &lt;Button appearance="primary"&gt;I am a button.&lt;/Button&gt;
+    &lt;/FluentProvider&gt;
+  );
+}</pre>
+      <div class="callout warn"><strong>Choosing packages.</strong> Every dependency is someone else's code running in your app.
+      Prefer well-maintained, widely used packages; check the weekly downloads, last publish date, and license on npmjs.com; and
+      run <code>npm audit</code> to find known vulnerabilities.</div>
+      <h3>Project ideas</h3>
+      <p>A React tic-tac-toe game (React's own tutorial at <a href="https://react.dev/learn/tutorial-tic-tac-toe">react.dev</a>),
+      a calculator, a to-do list that saves to localStorage, or a weather dashboard backed by your own Node API.</p>` },
+
+      { md: `<h2>Challenges</h2>
+      <p>Write components with JSX; render them into <code>#root</code> exactly as each prompt says. The tests wait a moment for
+      React to render, then click and read the page.</p>` },
+      { title: "Greeting", ...react, prompt: `Write a component <code>Greeting</code> that takes a <code>name</code> prop and
+        returns <code>&lt;h1&gt;Hello, NAME!&lt;/h1&gt;</code>. Render <code>&lt;Greeting name="Ada" /&gt;</code> into
+        <code>#root</code>.`,
+        starter: `function Greeting({ name }) {\n\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Greeting name="Ada" />);`,
+        solution: `function Greeting({ name }) {\n  return <h1>Hello, {name}!</h1>;\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Greeting name="Ada" />);`,
+        checks: [{ label: "#root", run: wait + `return _t.el("#root").innerHTML;` }] },
+      { title: "Shopping list", ...react, prompt: `Write <code>ShoppingList</code>, taking an <code>items</code> prop (an array of
+        strings) and rendering a <code>&lt;ul&gt;</code> with one <code>&lt;li&gt;</code> per item (use each item as its
+        <code>key</code>), or <code>&lt;p&gt;Nothing to buy&lt;/p&gt;</code> for an empty array. Render
+        <code>&lt;ShoppingList items={["milk", "eggs", "bread"]} /&gt;</code> and <code>&lt;ShoppingList items={[]} /&gt;</code>
+        inside one fragment.`,
+        solution: `function ShoppingList({ items }) {\n  if (items.length === 0) {\n    return <p>Nothing to buy</p>;\n  }\n  return (\n    <ul>\n      {items.map(item => <li key={item}>{item}</li>)}\n    </ul>\n  );\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(\n  <>\n    <ShoppingList items={["milk", "eggs", "bread"]} />\n    <ShoppingList items={[]} />\n  </>\n);`,
+        checks: [{ label: "#root", run: wait + `return _t.el("#root").innerHTML;` }] },
+      { title: "Counter", ...react, prompt: `Write <code>Counter</code> with state starting at 0, showing
+        <code>&lt;p&gt;Count: N&lt;/p&gt;</code>, a button with id <code>inc</code> that adds 1, and a button with id
+        <code>dec</code> that subtracts 1 but is <code>disabled</code> at 0. Render <code>&lt;Counter /&gt;</code>.`,
+        solution: `function Counter() {\n  const [count, setCount] = React.useState(0);\n  return (\n    <div>\n      <p>Count: {count}</p>\n      <button id="inc" onClick={() => setCount(count + 1)}>+</button>\n      <button id="dec" onClick={() => setCount(count - 1)} disabled={count === 0}>-</button>\n    </div>\n  );\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Counter />);`,
+        checks: [
+          { label: "initially", run: wait + `return [_t.text("#root p"), _t.el("#dec").disabled];` },
+          { label: "+ + + −", run: wait + `for (const id of ["inc", "inc", "inc", "dec"]) { _t.click("#" + id); await _t.wait(20); } return [_t.text("#root p"), _t.el("#dec").disabled];` },
+        ] },
+      { title: "Show and hide", ...react, prompt: `Write <code>Spoiler</code> with a <code>text</code> prop: a button labelled
+        <code>Show</code> that, when clicked, reveals <code>&lt;p&gt;TEXT&lt;/p&gt;</code> and changes its label to
+        <code>Hide</code>; clicking again hides it. Render <code>&lt;Spoiler text="It was the butler." /&gt;</code>.`,
+        solution: `function Spoiler({ text }) {\n  const [open, setOpen] = React.useState(false);\n  return (\n    <div>\n      <button onClick={() => setOpen(!open)}>{open ? "Hide" : "Show"}</button>\n      {open && <p>{text}</p>}\n    </div>\n  );\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Spoiler text="It was the butler." />);`,
+        checks: [
+          { label: "initially", run: wait + `return _t.el("#root").innerHTML;` },
+          { label: "click", run: wait + `_t.click("#root button"); await _t.wait(30); return _t.el("#root").innerHTML;` },
+          { label: "click again", run: wait + `_t.click("#root button"); await _t.wait(30); return _t.el("#root").innerHTML;` },
+        ] },
+      { title: "Shout box", ...react, prompt: `Write <code>Shout</code>: a controlled <code>&lt;input&gt;</code> (id
+        <code>msg</code>) and a <code>&lt;p&gt;</code> showing the text in upper case followed by <code>!</code> — or nothing (an
+        empty paragraph) while the input is empty. Render <code>&lt;Shout /&gt;</code>.`,
+        solution: `function Shout() {\n  const [text, setText] = React.useState("");\n  return (\n    <div>\n      <input id="msg" value={text} onChange={e => setText(e.target.value)} />\n      <p>{text === "" ? "" : text.toUpperCase() + "!"}</p>\n    </div>\n  );\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Shout />);`,
+        checks: [
+          { label: "empty", run: wait + `return _t.text("#root p");` },
+          { label: "type hello", run: wait + `const box = _t.el("#msg"); const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; setter.call(box, "hello"); box.dispatchEvent(new Event("input", { bubbles: true })); await _t.wait(30); return _t.text("#root p");` },
+        ] },
+      { title: "Tic-tac-toe board", ...react, prompt: `Write <code>Board</code>: nine <code>&lt;button className="square"&gt;</code>
+        elements (in order) showing <code>X</code>, <code>O</code> or nothing, plus <code>&lt;p className="status"&gt;Next player:
+        X&lt;/p&gt;</code>. Clicking an empty square fills it with the next player's mark and switches players; clicking a filled
+        square does nothing. Keep the squares in one state array (<code>Array(9).fill(null)</code>). Render
+        <code>&lt;Board /&gt;</code>.`,
+        hint: `Two pieces of state: <code>squares</code> and <code>xIsNext</code>. On click: if <code>squares[i]</code> is set,
+        return; otherwise copy the array (<code>[...squares]</code>), set the copy's slot, and call both setters. Never change the
+        state array in place.`,
+        solution: `function Board() {\n  const [squares, setSquares] = React.useState(Array(9).fill(null));\n  const [xIsNext, setXIsNext] = React.useState(true);\n\n  function handleClick(i) {\n    if (squares[i]) {\n      return;\n    }\n    const next = [...squares];\n    next[i] = xIsNext ? "X" : "O";\n    setSquares(next);\n    setXIsNext(!xIsNext);\n  }\n\n  return (\n    <div>\n      {squares.map((value, i) => (\n        <button key={i} className="square" onClick={() => handleClick(i)}>{value}</button>\n      ))}\n      <p className="status">Next player: {xIsNext ? "X" : "O"}</p>\n    </div>\n  );\n}\n\nReactDOM.createRoot(document.getElementById("root")).render(<Board />);`,
+        checks: [
+          { label: "empty board", run: wait + `return [_t.$$(".square").map(b => b.textContent), _t.text(".status")];` },
+          { label: "click 4, 0, 4 (taken), 8", run: wait + `for (const i of [4, 0, 4, 8]) { _t.$$(".square")[i].click(); await _t.wait(20); } return [_t.$$(".square").map(b => b.textContent), _t.text(".status")];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>React builds UIs from <strong>components</strong>: functions that return JSX.</li>
+        <li>JSX: <code>{expressions}</code>, one root (or a fragment), <code>className</code>, camelCase events, closed tags.</li>
+        <li><strong>Props</strong> configure a component from outside and are read-only; <strong>state</strong> (<code>useState</code>) lives inside, and setting it re-renders.</li>
+        <li>Lists with <code>map</code> and a <code>key</code>; conditions with <code>&amp;&amp;</code> and <code>? :</code>; controlled inputs; lift shared state up.</li>
+        <li><code>useEffect</code> for side effects such as loading data.</li>
+        <li>Real apps are npm projects (<code>npm create vite@latest</code>); <code>npm i package</code> adds dependencies to <code>package.json</code>.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

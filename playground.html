@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Playground — CSC 227 JS</title>
+  <link rel="stylesheet" href="lessons/lesson.css">
+  <style>
+    .pg{max-width:52rem;margin:1rem auto 3rem;padding:0 1.25rem;}
+    .pg .panel-label{margin-top:1rem;}
+    .pg textarea.html-ed{width:100%;min-height:7rem;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.9rem;line-height:1.55;background:var(--in-bg);border:1px solid var(--in-border);border-radius:6px;padding:.6rem .8rem;}
+    .pg textarea.html-ed:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,95,255,.12);}
+    .opts{display:flex;flex-wrap:wrap;gap:.4rem 1.1rem;font-size:.88rem;color:var(--muted);margin:.7rem 0 .2rem;}
+    .opts label{display:flex;gap:.35rem;align-items:center;}
+    .pg .hint{font-size:.84rem;color:var(--muted);margin:.3rem 0 0;}
+  </style>
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Introduction to JavaScript</div>
+    <h1>Playground</h1>
+    <p class="lead">A blank editor: write any JavaScript, optionally give it a page of HTML to work on, and run it.</p>
+  </header>
+
+  <main class="pg">
+    <div class="panel-label">Page HTML <span style="text-transform:none;font-weight:400">(optional — leave empty for console-only programs)</span></div>
+    <textarea class="html-ed" id="html" spellcheck="false" placeholder='<button id="go">Go</button>'></textarea>
+    <div class="panel-label">JavaScript</div>
+    <div id="ed-slot"></div>
+    <div class="opts">
+      <label><input type="checkbox" id="opt-mock"> pretend web APIs (as in lessons 18–19)</label>
+      <label><input type="checkbox" id="opt-live"> real network instead</label>
+      <label><input type="checkbox" id="opt-storage"> localStorage (saved between runs)</label>
+      <label><input type="checkbox" id="opt-react"> React + JSX</label>
+      <label><input type="checkbox" id="opt-node"> Node (http/url simulation)</label>
+    </div>
+    <div class="controls">
+      <button type="button" class="run-btn" id="run">▶ Run</button>
+      <button type="button" class="reset-btn" id="clear-storage">Clear saved localStorage</button>
+      <span class="cell-hint">Ctrl+Enter runs · everything here is saved in your browser</span>
+    </div>
+    <p class="hint">Loops that never stop are halted after a moment. With the Node option, call <code>_t.request("/path")</code>
+      from your code (e.g. <code>console.log(await _t.request("/"))</code>) to send your server a request.</p>
+    <div class="panel-label">Console</div>
+    <div id="con-slot"></div>
+    <div id="page-wrap" hidden>
+      <div class="panel-label">Page</div>
+      <div id="page-slot"></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { makeEditor } from "./lessons/lesson.js";
+    import { runCode, disposeFrame } from "./jsrunner.js";
+    import { courseApi } from "./lessons/mock-apis.js";
+
+    const KEY = "js227-playground";
+    const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+    const state = Object.assign({
+      code: 'console.log("Hello from the playground!");\n',
+      html: "",
+      opts: {},
+      storage: {},
+    }, load());
+    const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage off */ } };
+
+    const html = document.getElementById("html");
+    html.value = state.html;
+    html.addEventListener("input", () => { state.html = html.value; persist(); });
+
+    const editor = makeEditor(state.code, { onRun: run, onChange: (v) => { state.code = v; persist(); }, label: "Playground JavaScript" });
+    document.getElementById("ed-slot").replaceWith(editor.root);
+
+    const optIds = ["mock", "live", "storage", "react", "node"];
+    for (const id of optIds) {
+      const box = document.getElementById("opt-" + id);
+      box.checked = !!state.opts[id];
+      box.addEventListener("change", () => { state.opts[id] = box.checked; persist(); });
+    }
+
+    // A console panel like the lessons' (kept local: the lesson one isn't exported).
+    const con = document.createElement("div");
+    con.className = "console";
+    document.getElementById("con-slot").replaceWith(con);
+    const add = ({ level, text }) => {
+      if (level === "clear") { con.replaceChildren(); return; }
+      con.querySelector(".con-empty")?.remove();
+      const line = document.createElement("div");
+      line.className = "con-line con-" + level;
+      line.textContent = text;
+      con.appendChild(line);
+      con.scrollTop = con.scrollHeight;
+    };
+
+    document.getElementById("clear-storage").addEventListener("click", () => { state.storage = {}; persist(); run(); });
+
+    let frame = null;
+    async function run() {
+      const runBtn = document.getElementById("run");
+      runBtn.disabled = true;
+      con.innerHTML = `<div class="con-empty">Running…</div>`;
+      disposeFrame(frame);
+      const o = state.opts;
+      const useFrame = html.value.trim() !== "" || o.react;
+      document.getElementById("page-wrap").hidden = !useFrame;
+      const res = await runCode(editor.get(), {
+        runner: useFrame && !o.node ? "frame" : "worker",
+        html: o.react && html.value.trim() === "" ? '<div id="root"></div>' : html.value,
+        mount: document.getElementById("page-slot"), keep: true, onLog: add,
+        mock: o.mock ? courseApi : null, live: !!o.live,
+        storage: o.storage ? state.storage : null,
+        onStorage: (data) => { state.storage = data; persist(); },
+        jsx: !!o.react, libs: o.react ? ["react"] : [],
+        node: !!o.node, timeout: 10000,
+      });
+      frame = res.frame;
+      if (!con.querySelector(".con-line")) con.innerHTML = `<div class="con-empty">(no console output)</div>`;
+      runBtn.disabled = false;
+    }
+    document.getElementById("run").addEventListener("click", run);
+    run();
+  </script>
+
+  <script type="module" src="./site-nav.js"></script>
+</body>
+</html>

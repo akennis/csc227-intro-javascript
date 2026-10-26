@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>10 · Objects as Maps — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 10 of 22</div>
+    <h1>10 · Objects as Maps</h1>
+    <p class="lead">Store values under keys and get them back fast: maps, a.k.a. objects, dictionaries, or key/value stores.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-10">✏️ Practice this lesson → Lab 10 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Looking things up by key</h2>
+      <p>A <strong>map</strong> stores values under specific <strong>keys</strong>, so each value can later be retrieved
+      by its key. The classic real-world example is a dictionary: to find a definition, you find the word in the
+      alphabetised index and read what's stored there. Others:</p>
+      <ul>
+        <li>a parking attendant finding your car keys from the code on your ticket;</li>
+        <li>a restaurant finding your reservation in its book from your time and name;</li>
+        <li>a phone's contacts: name → number.</li>
+      </ul>
+      <p>In JavaScript, the everyday map is a plain <strong>object</strong>: curly braces holding
+      <code>key: value</code> pairs. (They're also called dictionaries, hashes, or key/value stores.)</p>` },
+      { title: "An email directory", code: `
+// declare and populate the object
+const emails = {
+  "Kennis": "albertkennis@sunyorange.edu",
+  "Walters": "ralphwalters@another.com",
+  "Quick": "mrquick@somewhere.com",
+};
+
+// pull from the object
+const kennisEmail = emails["Kennis"];
+const waltersEmail = emails.Walters;
+console.log(kennisEmail);
+console.log(waltersEmail);
+console.log(emails["Nobody"]);    // a missing key gives undefined
+console.log(emails);
+` },
+      { md: `<h2>Two ways to read a key</h2>
+      <p><strong>Bracket</strong> notation <code>obj["key"]</code> works with any string — and with a <em>variable</em>
+      holding the key. <strong>Dot</strong> notation <code>obj.key</code> is shorter but only works when the key is a
+      fixed, valid identifier you type into the code.</p>` },
+      { title: "Dot versus brackets", code: `
+const ages = { rover: 8, "fido the dog": 3 };
+console.log(ages.rover, ages["rover"]);
+console.log(ages["fido the dog"]);      // has spaces: brackets only
+
+const who = "rover";
+console.log(ages[who]);                 // the value of the variable who: "rover"
+console.log(ages.who);                  // the key literally named "who": undefined
+` },
+      { md: `<div class="callout warn"><strong>The most common map bug</strong> is <code>obj.key</code> when you meant
+      <code>obj[key]</code>. If the key is in a variable, you need brackets.</div>
+      <p>Keys must be unique, and they are always strings (other values are converted: <code>obj[1]</code> and
+      <code>obj["1"]</code> are the same entry). Values can be anything — numbers, strings, arrays, even other objects.
+      Use a map when you have data that needs fast lookup based on unique keys.</p>` },
+
+      { md: `<h2>Adding, overwriting, deleting</h2>
+      <p>Assigning to a key that doesn't exist yet adds a pair. Assigning to one that does exist overwrites the old value
+      — a <strong>collision</strong>. <code>delete</code> removes a pair.</p>` },
+      { title: "Changing a map", code: `
+const emails = { Kennis: "albertkennis@sunyorange.edu" };
+
+emails["mouse"] = "mickeymouse@mm.com";      // add
+console.log(emails);
+
+emails["mouse"] = "mm@mm.com";               // collision: overwrites
+console.log(emails["mouse"]);
+
+delete emails["mouse"];                      // remove
+console.log(emails["mouse"]);
+console.log(emails);
+` },
+      { title: "Does a key exist?", code: `
+const stock = { apples: 12, pears: 0 };
+console.log("pears" in stock, "kiwis" in stock);
+console.log(Object.hasOwn(stock, "apples"));
+console.log(stock.kiwis === undefined);
+// careful: a falsy VALUE is not a missing KEY
+if (stock.pears) { console.log("have pears"); } else { console.log("pears is falsy (0), but the key exists"); }
+console.log(stock.kiwis ?? "no such fruit");
+` },
+
+      { md: `<h2>Looping over a map</h2>
+      <p><code>Object.keys(obj)</code>, <code>Object.values(obj)</code> and <code>Object.entries(obj)</code> return arrays
+      of the keys, the values, or <code>[key, value]</code> pairs — then use any array technique from lesson 9. There's
+      also <code>for (const key in obj)</code>.</p>` },
+      { title: "keys, values, entries", code: `
+const prices = { coffee: 3.5, bagel: 2.25, juice: 4 };
+
+console.log(Object.keys(prices));
+console.log(Object.values(prices));
+console.log(Object.entries(prices));
+console.log("items on the menu:", Object.keys(prices).length);
+
+for (const [item, price] of Object.entries(prices)) {
+  console.log(item.padEnd(8) + "$" + price.toFixed(2));
+}
+
+for (const item in prices) {
+  console.log(item, "->", prices[item]);   // a variable key: brackets
+}
+
+const total = Object.values(prices).reduce((s, p) => s + p, 0);
+console.log("everything:", total);
+` },
+
+      { md: `<h2>The counting pattern</h2>
+      <p>One of the most useful things a map does: count how many times each thing occurs. Start with an empty object;
+      for each item, add 1 to its count — starting from 0 if it's not there yet.</p>` },
+      { title: "Word frequencies", code: `
+function countWords(text) {
+  const counts = {};
+  for (const word of text.toLowerCase().split(" ")) {
+    if (word === "") {
+      continue;
+    }
+    counts[word] = (counts[word] ?? 0) + 1;
+  }
+  return counts;
+}
+
+const counts = countWords("the cat and the hat and the bat");
+console.log(counts);
+console.log("the:", counts["the"]);
+
+// the most common word
+let best = null;
+for (const [word, n] of Object.entries(counts)) {
+  if (best === null || n > counts[best]) {
+    best = word;
+  }
+}
+console.log("most common:", best);
+` },
+
+      { md: `<h2>Objects are passed by reference</h2>
+      <p>Like arrays, objects are passed to functions by reference — so a function can change (<em>mutate</em>) the
+      object it's given.</p>` },
+      { title: "A function that adds to a map", code: `
+const emails = { Kennis: "albertkennis@sunyorange.edu" };
+
+function addEmail(name, email, lookup) {
+  lookup[name] = email;
+}
+
+addEmail("fool", "fool@foolish.com", emails);
+console.log(emails);
+
+const copy = { ...emails };    // spread makes a shallow copy
+copy.extra = "x@y.z";
+console.log(Object.keys(emails).length, Object.keys(copy).length);
+` },
+      { md: `<div class="callout warn"><strong><code>===</code> compares references, not contents.</strong> Two separate
+      objects with identical keys and values are <em>not</em> <code>===</code>; only two references to the same object
+      are. To compare contents, compare the values key by key (or, for simple data,
+      <code>JSON.stringify(a) === JSON.stringify(b)</code> when keys are in the same order).</div>` },
+      { title: "Equality of objects", code: `
+const a = { x: 1 };
+const b = { x: 1 };
+const c = a;
+console.log(a === b, a === c);
+console.log(JSON.stringify(a) === JSON.stringify(b));
+` },
+
+      { md: `<h2>Records and collections</h2>
+      <p>The same braces also describe a single <strong>record</strong> — one thing with named properties. Combine them
+      with arrays to describe real data: an array of records, or a map from an id to a record.</p>` },
+      { title: "Array of records, map of records", code: `
+const students = [
+  { name: "Ada", year: 2, gpa: 3.9 },
+  { name: "Alan", year: 3, gpa: 3.4 },
+  { name: "Grace", year: 2, gpa: 3.7 },
+];
+console.log(students[1].name);
+const sophomores = students.filter(s => s.year === 2).map(s => s.name);
+console.log(sophomores);
+
+// index them by name for fast lookup
+const byName = {};
+for (const s of students) {
+  byName[s.name] = s;
+}
+console.log(byName["Grace"].gpa);
+byName["Grace"].gpa = 3.8;          // same object as in the array
+console.log(students[2].gpa);
+` },
+
+      { md: `<h2>JSON: objects as text</h2>
+      <p><strong>JSON</strong> (JavaScript Object Notation) is the standard text format for sending data between programs
+      and over the web. <code>JSON.stringify</code> turns a value into JSON text; <code>JSON.parse</code> turns JSON text back
+      into a value. In JSON, keys must be in double quotes.</p>` },
+      { title: "stringify and parse", code: `
+const order = { id: 17, items: ["coffee", "bagel"], paid: false };
+const text = JSON.stringify(order);
+console.log(text, typeof text);
+console.log(JSON.stringify(order, null, 2));     // pretty-printed
+
+const back = JSON.parse('{"name":"Rover","age":8,"tags":["good","dog"]}');
+console.log(back.name, back.tags[1], typeof back);
+` },
+
+      { md: `<h2>The Map class</h2>
+      <p>JavaScript also has a dedicated <code>Map</code> type. It keeps keys in insertion order, allows keys of any type
+      (not just strings), and has a <code>size</code>. Plain objects are fine for most string-keyed lookups; reach for
+      <code>Map</code> when keys aren't strings or you add and remove entries constantly.</p>` },
+      { title: "Map", code: `
+const m = new Map();
+m.set("Kennis", "albertkennis@sunyorange.edu");
+m.set(42, "a number key");
+console.log(m.get("Kennis"), m.get(42), m.has("Nobody"), m.size);
+m.delete(42);
+for (const [k, v] of m) {
+  console.log(k, "=>", v);
+}
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Lookup with a default", prompt: `Write <code>getOr(map, key, fallback)</code>: the value stored under
+        <code>key</code>, or <code>fallback</code> if the key isn't in the map. A stored value of <code>0</code> must be
+        returned, not replaced.`,
+        solution: `function getOr(map, key, fallback) {\n  return key in map ? map[key] : fallback;\n}`,
+        checks: [{ expr: `getOr({ a: 1 }, "a", 9)` }, { expr: `getOr({ a: 1 }, "b", 9)` }, { expr: `getOr({ a: 0 }, "a", 9)` }] },
+      { title: "Count letters", prompt: `Write <code>letterCounts(word)</code> returning an object mapping each character
+        to how many times it occurs. <code>letterCounts("hello")</code> is <code>{h: 1, e: 1, l: 2, o: 1}</code>.`,
+        solution: `function letterCounts(word) {\n  const counts = {};\n  for (const ch of word) {\n    counts[ch] = (counts[ch] ?? 0) + 1;\n  }\n  return counts;\n}`,
+        checks: [{ expr: `letterCounts("hello")` }, { expr: `letterCounts("")` }, { expr: `letterCounts("aaa")` }] },
+      { title: "Invert", prompt: `Write <code>invert(map)</code> returning a new object with keys and values swapped:
+        <code>invert({a: "x", b: "y"})</code> is <code>{x: "a", y: "b"}</code>.`,
+        solution: `function invert(map) {\n  const result = {};\n  for (const [k, v] of Object.entries(map)) {\n    result[v] = k;\n  }\n  return result;\n}`,
+        checks: [{ expr: `invert({ a: "x", b: "y" })` }, { expr: `invert({})` }] },
+      { title: "Cart total", prompt: `<code>prices</code> maps item names to prices. Write <code>cartTotal(cart, prices)</code>
+        where <code>cart</code> is an array of item names (repeats allowed). Items not in <code>prices</code> are skipped.`,
+        starter: `const prices = { coffee: 3.5, bagel: 2.25, juice: 4 };\n\nfunction cartTotal(cart, prices) {\n\n}`,
+        solution: `const prices = { coffee: 3.5, bagel: 2.25, juice: 4 };\n\nfunction cartTotal(cart, prices) {\n  let total = 0;\n  for (const item of cart) {\n    if (item in prices) {\n      total += prices[item];\n    }\n  }\n  return total;\n}`,
+        checks: [{ expr: `cartTotal(["coffee", "bagel", "coffee"], prices)` }, { expr: `cartTotal(["tea", "juice"], prices)` }, { expr: `cartTotal([], prices)` }] },
+      { title: "Group by first letter", prompt: `Write <code>groupByFirst(words)</code> returning an object whose keys are
+        lower-case first letters and whose values are arrays of the words starting with that letter, in their original
+        order. <code>groupByFirst(["apple", "bee", "Avocado"])</code> is <code>{a: ["apple", "Avocado"], b: ["bee"]}</code>.`,
+        solution: `function groupByFirst(words) {\n  const groups = {};\n  for (const w of words) {\n    const key = w[0].toLowerCase();\n    if (!(key in groups)) {\n      groups[key] = [];\n    }\n    groups[key].push(w);\n  }\n  return groups;\n}`,
+        checks: [{ expr: `groupByFirst(["apple", "bee", "Avocado"])` }, { expr: `groupByFirst(["x"])` }, { expr: `groupByFirst([])` }] },
+      { title: "Highest GPA", prompt: `Write <code>topStudent(students)</code> for an array of
+        <code>{name, gpa}</code> records, returning the <strong>name</strong> with the highest GPA (the first one on a tie).`,
+        solution: `function topStudent(students) {\n  let best = students[0];\n  for (const s of students) {\n    if (s.gpa > best.gpa) {\n      best = s;\n    }\n  }\n  return best.name;\n}`,
+        checks: [{ expr: `topStudent([{ name: "Ada", gpa: 3.9 }, { name: "Alan", gpa: 4.0 }, { name: "Grace", gpa: 3.7 }])` },
+          { expr: `topStudent([{ name: "A", gpa: 3 }, { name: "B", gpa: 3 }])` }] },
+      { title: "Phone book page", prompt: `Keep a phone book in an object. <strong>Save</strong> stores
+        <code>#phone</code> under the name in <code>#name</code> (overwriting any old number). <strong>Find</strong> shows the
+        number for the name in <code>#name</code> in <code>#result</code>, or <code>Not found</code>. <strong>Delete</strong>
+        removes that name. Names are case-insensitive: store them lower-cased and trimmed.`,
+        html: `<label>Name <input id="name"></label>
+<label>Phone <input id="phone"></label><br>
+<button id="save">Save</button> <button id="find">Find</button> <button id="del">Delete</button>
+<p id="result"></p>`,
+        starter: `const book = {};\n\nfunction key() {\n  return document.getElementById("name").value.trim().toLowerCase();\n}\n\n// add three click handlers here\n`,
+        solution: `const book = {};\n\nfunction key() {\n  return document.getElementById("name").value.trim().toLowerCase();\n}\n\ndocument.getElementById("save").addEventListener("click", () => {\n  book[key()] = document.getElementById("phone").value;\n});\n\ndocument.getElementById("find").addEventListener("click", () => {\n  const k = key();\n  document.getElementById("result").textContent = k in book ? book[k] : "Not found";\n});\n\ndocument.getElementById("del").addEventListener("click", () => {\n  delete book[key()];\n});`,
+        checks: [
+          { label: "save Ada, find ADA", run: `_t.type("#name", "Ada"); _t.type("#phone", "555-0101"); _t.click("#save"); _t.type("#name", " ADA "); _t.click("#find"); return _t.text("#result");` },
+          { label: "overwrite", run: `_t.type("#name", "ada"); _t.type("#phone", "555-9999"); _t.click("#save"); _t.click("#find"); return _t.text("#result");` },
+          { label: "unknown name", run: `_t.type("#name", "Zed"); _t.click("#find"); return _t.text("#result");` },
+          { label: "delete Ada", run: `_t.type("#name", "Ada"); _t.click("#del"); _t.click("#find"); return _t.text("#result");` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>{ key: value, … }</code> maps unique string keys to values; read with <code>obj[key]</code> or <code>obj.name</code>.</li>
+        <li>Use brackets when the key is in a variable. Missing keys read as <code>undefined</code>; test with <code>in</code>.</li>
+        <li>Assign to add or overwrite; <code>delete obj[key]</code> to remove.</li>
+        <li><code>Object.keys / values / entries</code> turn a map into arrays to loop over.</li>
+        <li>Counting pattern: <code>counts[k] = (counts[k] ?? 0) + 1</code>.</li>
+        <li>Objects are passed by reference; <code>===</code> compares references. JSON turns them into text and back.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

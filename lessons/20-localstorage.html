@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>20 · localStorage — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 20 of 22</div>
+    <h1>20 · localStorage</h1>
+    <p class="lead">Save key/value data in the browser, so it's still there after the page is reloaded — or the browser closed.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-20">✏️ Practice this lesson → Lab 20 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>What localStorage is</h2>
+      <p><strong>localStorage</strong> is a web storage API that lets a page store <strong>key/value pairs</strong> in the
+      browser.</p>
+      <ul>
+        <li>Data <strong>persists</strong> even after the browser is closed — until code or the user removes it.</li>
+        <li>The storage limit is typically around <strong>5 MB</strong> per site.</li>
+        <li>Data is <strong>domain-specific</strong>: each site (origin) has its own storage; a page can't read another
+        site's.</li>
+        <li>Keys and values are always <strong>strings</strong>.</li>
+      </ul>
+      <p>It's ideal for small things a page should remember: a user's preferences, a draft, a shopping cart, the high score.
+      (This course uses it to save your code as you type!)</p>
+      <div class="callout tip"><strong>On this page</strong>, examples run in a sandbox that isn't allowed to touch the real
+      localStorage, so each example gets a stand-in that works exactly the same way and that this page saves for you. Its data
+      survives <strong>Run</strong> and reloading the page; <strong>Clear saved data</strong> empties it.</div>` },
+
+      { md: `<h2>The methods</h2>
+      <table>
+        <tr><th>Method</th><th>Does</th></tr>
+        <tr><td><code>localStorage.setItem(key, value)</code></td><td>stores <code>value</code> under <code>key</code> (replacing any old value)</td></tr>
+        <tr><td><code>localStorage.getItem(key)</code></td><td>returns the stored string, or <code>null</code> if there's none</td></tr>
+        <tr><td><code>localStorage.removeItem(key)</code></td><td>deletes that pair</td></tr>
+        <tr><td><code>localStorage.clear()</code></td><td>deletes every pair for this site</td></tr>
+        <tr><td><code>localStorage.key(index)</code></td><td>the key at position <code>index</code> (for looping)</td></tr>
+        <tr><td><code>localStorage.length</code></td><td>how many pairs are stored</td></tr>
+      </table>` },
+      { title: "Set, get, remove", storage: true, code: `
+console.log("before:", localStorage.getItem("username"));
+
+localStorage.setItem("username", "johnDoe");
+const username = localStorage.getItem("username");
+console.log(username);                  // johnDoe
+
+localStorage.removeItem("username");
+console.log("after remove:", localStorage.getItem("username"));   // null
+` },
+      { title: "It survives a reload", storage: true, code: `
+const visits = Number(localStorage.getItem("visits") ?? 0) + 1;
+localStorage.setItem("visits", visits);
+console.log("You have run this example " + visits + " time(s).");
+console.log("Press Run again, or reload the page — the count keeps going.");
+` },
+      { md: `<p>Notice <code>Number(…)</code>: what comes back is the <em>string</em> <code>"3"</code>, not the number 3.
+      <code>?? 0</code> handles the very first visit, when <code>getItem</code> returns <code>null</code>. Press <strong>Clear
+      saved data</strong> to start the count over.</p>` },
+
+      { md: `<h2>Everything is a string</h2>
+      <p>Numbers and booleans are converted to strings when stored — and objects become the useless text
+      <code>"[object Object]"</code>. To store arrays and objects, convert them to JSON text with <code>JSON.stringify</code> and
+      back with <code>JSON.parse</code> (lesson 10).</p>` },
+      { title: "Storing structured data", storage: true, code: `
+localStorage.setItem("count", 42);
+localStorage.setItem("on", true);
+console.log(typeof localStorage.getItem("count"), localStorage.getItem("count") + 1);   // "421"!
+console.log(localStorage.getItem("on") === true, localStorage.getItem("on") === "true");
+
+localStorage.setItem("bad", { a: 1 });
+console.log("object stored directly:", localStorage.getItem("bad"));
+
+const prefs = { theme: "dark", fontSize: 18, favorites: ["js", "css"] };
+localStorage.setItem("prefs", JSON.stringify(prefs));
+const back = JSON.parse(localStorage.getItem("prefs"));
+console.log(back.fontSize + 2, back.favorites[1]);
+` },
+      { title: "Helpers that hide the JSON", storage: true, code: `
+function save(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function load(key, fallback) {
+  const text = localStorage.getItem(key);
+  if (text === null) {
+    return fallback;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return fallback;            // stored data was corrupt
+  }
+}
+
+const cart = load("cart", []);
+cart.push("item " + (cart.length + 1));
+save("cart", cart);
+console.log("cart:", cart);
+console.log("settings:", load("settings", { theme: "light" }));
+` },
+
+      { md: `<h2>Looping over what's stored</h2>
+      <p><code>key(i)</code> and <code>length</code> let you list everything. Real sites store many unrelated things in the
+      same storage, so give your keys a <strong>prefix</strong> (a "namespace") like <code>"contact:"</code> to find just
+      yours.</p>` },
+      { title: "Listing keys", storage: { "contact:ada": "555-0101", "contact:alan": "555-0102", "theme": "dark" }, code: `
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  console.log(key, "=", localStorage.getItem(key));
+}
+
+const contacts = [];
+for (let i = 0; i < localStorage.length; i++) {
+  const key = localStorage.key(i);
+  if (key.startsWith("contact:")) {
+    contacts.push(key.slice("contact:".length));
+  }
+}
+console.log("contacts:", contacts);
+` },
+
+      { md: `<h2>Practical example: contact information</h2>
+      <p>A form to save contact details (first name, last name, phone number), and a form to look up a contact by first name.
+      Each contact is stored as JSON under a key built from the first name. Save a few contacts, reload the page, and look
+      them up again.</p>` },
+      { title: "Contacts", storage: true, height: 260, html: `<h3>Add a contact</h3>
+<input id="first" placeholder="First name">
+<input id="last" placeholder="Last name">
+<input id="phone" placeholder="Phone number">
+<button id="save">Save</button>
+<h3>Look up</h3>
+<input id="lookup" placeholder="First name">
+<button id="find">Find</button>
+<p id="result"></p>`, code: `
+function contactKey(firstName) {
+  return "contact:" + firstName.trim().toLowerCase();
+}
+
+document.getElementById("save").addEventListener("click", () => {
+  const first = document.getElementById("first").value.trim();
+  const last = document.getElementById("last").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  if (first === "" || phone === "") {
+    document.getElementById("result").textContent = "First name and phone are required.";
+    return;
+  }
+  localStorage.setItem(contactKey(first), JSON.stringify({ first, last, phone }));
+  document.getElementById("result").textContent = "Saved " + first + ".";
+});
+
+document.getElementById("find").addEventListener("click", () => {
+  const text = localStorage.getItem(contactKey(document.getElementById("lookup").value));
+  const result = document.getElementById("result");
+  if (text === null) {
+    result.textContent = "No such contact.";
+  } else {
+    const c = JSON.parse(text);
+    result.textContent = c.first + " " + c.last + ": " + c.phone;
+  }
+});
+` },
+
+      { md: `<h2>Remembering page state</h2>
+      <p>The pattern for "remember this": when the page loads, <strong>read</strong> the saved value and apply it; whenever it
+      changes, <strong>write</strong> it.</p>` },
+      { title: "A persistent to-do list", storage: true, html: `<style>.done { text-decoration: line-through; color: #888; } li { cursor: pointer; }</style>
+<input id="text" placeholder="New task"> <button id="add">Add</button>
+<ul id="list"></ul>
+<p><small>Click a task to mark it done. Reload the page: it's all still here.</small></p>`, code: `
+let tasks = JSON.parse(localStorage.getItem("tasks") ?? "[]");
+
+function persist() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function render() {
+  const list = document.getElementById("list");
+  list.replaceChildren();
+  tasks.forEach((task, i) => {
+    const li = document.createElement("li");
+    li.textContent = task.text;
+    li.classList.toggle("done", task.done);
+    li.addEventListener("click", () => {
+      tasks[i].done = !tasks[i].done;
+      persist();
+      render();
+    });
+    list.append(li);
+  });
+}
+
+document.getElementById("add").addEventListener("click", () => {
+  const box = document.getElementById("text");
+  if (box.value.trim() !== "") {
+    tasks.push({ text: box.value.trim(), done: false });
+    box.value = "";
+    persist();
+    render();
+  }
+});
+
+render();
+` },
+
+      { md: `<h2>Best practices and considerations</h2>
+      <ul>
+        <li><strong>Validate and sanitize</strong> data before storing it — and again when you read it back. Stored data may
+        be old, edited by the user in DevTools, or written by an older version of your code. Wrap <code>JSON.parse</code> in
+        <code>try</code>/<code>catch</code>.</li>
+        <li><strong>Mind the limit.</strong> Around 5 MB; <code>setItem</code> throws when storage is full (and in some
+        private-browsing modes). Don't store large amounts of data, like images.</li>
+        <li><strong>Never store sensitive information</strong> — passwords, card numbers, secret tokens. Any script running on
+        the page (including an attacker's, via XSS) can read all of it, and so can anyone with the computer.</li>
+        <li>It's synchronous and per-browser: data doesn't follow the user to another device. Real accounts need a server.</li>
+        <li><code>sessionStorage</code> has the same methods but is cleared when the tab is closed.</li>
+      </ul>
+      <p>You can inspect any site's storage in DevTools: <strong>Application</strong> (Chrome/Edge) or <strong>Storage</strong>
+      (Firefox) → Local Storage.</p>` },
+
+      { md: `<h2>Challenges</h2>
+      <p>Each test run starts with the storage contents shown in the prompt (or empty), and the tests read what your code
+      leaves in storage.</p>` },
+      { title: "Remember a name", storage: true, prompt: `Write <code>saveName(name)</code>, storing it under the key
+        <code>"name"</code>, and <code>loadName()</code>, returning the stored name or <code>"Guest"</code> if there is none.`,
+        solution: `function saveName(name) {\n  localStorage.setItem("name", name);\n}\n\nfunction loadName() {\n  return localStorage.getItem("name") ?? "Guest";\n}`,
+        checks: [{ expr: "loadName()" }, { label: 'saveName("Ada"), then load', run: `saveName("Ada"); return [loadName(), _t.storage()];` }] },
+      { title: "Visit counter", storage: { visits: "4" }, prompt: `Write <code>countVisit()</code>: add one to the number stored under
+        <code>"visits"</code> (treat a missing value as 0), store it, and return the new count as a <strong>number</strong>.
+        (Storage starts as <code>{ visits: "4" }</code>.)`,
+        solution: `function countVisit() {\n  const n = Number(localStorage.getItem("visits") ?? 0) + 1;\n  localStorage.setItem("visits", n);\n  return n;\n}`,
+        checks: [{ label: "two visits", run: `return [countVisit(), countVisit(), _t.storage()];` },
+          { label: "after clear()", run: `localStorage.clear(); return countVisit();` }] },
+      { title: "High scores", storage: true, prompt: `Write <code>addScore(n)</code>, which keeps an array of numbers as JSON under
+        <code>"scores"</code> and adds <code>n</code> to it, and <code>topScores(k)</code>, returning the <code>k</code> highest,
+        highest first (an empty array if nothing is stored).`,
+        solution: `function loadScores() {\n  return JSON.parse(localStorage.getItem("scores") ?? "[]");\n}\n\nfunction addScore(n) {\n  const scores = loadScores();\n  scores.push(n);\n  localStorage.setItem("scores", JSON.stringify(scores));\n}\n\nfunction topScores(k) {\n  return loadScores().sort((a, b) => b - a).slice(0, k);\n}`,
+        checks: [{ expr: "topScores(3)" }, { label: "add 50, 90, 70, 100", run: `[50, 90, 70, 100].forEach(addScore); return [topScores(3), _t.storage()];` }] },
+      { title: "Settings object", storage: { settings: '{"theme":"dark"}' }, prompt: `All settings live in one JSON object under
+        <code>"settings"</code>. Write <code>getSetting(key, fallback)</code> and <code>setSetting(key, value)</code>, which updates
+        just that one setting and keeps the others. Corrupt or missing data counts as an empty object.`,
+        solution: `function loadSettings() {\n  try {\n    return JSON.parse(localStorage.getItem("settings")) ?? {};\n  } catch {\n    return {};\n  }\n}\n\nfunction getSetting(key, fallback) {\n  const s = loadSettings();\n  return key in s ? s[key] : fallback;\n}\n\nfunction setSetting(key, value) {\n  const s = loadSettings();\n  s[key] = value;\n  localStorage.setItem("settings", JSON.stringify(s));\n}`,
+        checks: [{ expr: `getSetting("theme", "light")` }, { expr: `getSetting("fontSize", 16)` },
+          { label: "setSetting fontSize 20", run: `setSetting("fontSize", 20); return [getSetting("fontSize", 16), getSetting("theme", "light"), JSON.parse(_t.storage().settings)];` },
+          { label: "corrupt data", run: `localStorage.setItem("settings", "{oops"); return getSetting("theme", "light");` }] },
+      { title: "Remembered theme", storage: { theme: "dark" }, prompt: `When the page loads, read <code>"theme"</code> from storage
+        (default <code>"light"</code>) and set <code>document.body.className</code> to it. Clicking <code>#toggle</code> switches
+        between <code>"light"</code> and <code>"dark"</code>, applies it, and saves it. (Storage starts as
+        <code>{ theme: "dark" }</code>, as if saved on a previous visit.)`,
+        html: `<style>body.dark { background: #222; color: #eee; }</style>
+<p>Some text.</p>
+<button id="toggle">Toggle theme</button>`,
+        solution: `function applyTheme(theme) {\n  document.body.className = theme;\n}\n\nlet theme = localStorage.getItem("theme") ?? "light";\napplyTheme(theme);\n\ndocument.getElementById("toggle").addEventListener("click", () => {\n  theme = theme === "dark" ? "light" : "dark";\n  applyTheme(theme);\n  localStorage.setItem("theme", theme);\n});`,
+        checks: [{ label: "on load", run: `return document.body.className;` },
+          { label: "toggle once", run: `_t.click("#toggle"); return [document.body.className, _t.storage()];` },
+          { label: "toggle again", run: `_t.click("#toggle"); return [document.body.className, _t.storage()];` }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>localStorage</code> stores string key/value pairs per site, persisting across reloads and restarts (~5 MB).</li>
+        <li><code>setItem</code>, <code>getItem</code> (<code>null</code> if missing), <code>removeItem</code>, <code>clear</code>, <code>key(i)</code>, <code>length</code>.</li>
+        <li>Store arrays/objects as JSON: <code>JSON.stringify</code> to save, <code>JSON.parse</code> (in a <code>try</code>) to load.</li>
+        <li>Pattern: read and apply on load; write on every change. Prefix your keys.</li>
+        <li>Validate what you read, respect the size limit, and never store secrets.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

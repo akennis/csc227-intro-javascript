@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>19 · Async / Await &amp; fetch — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 19 of 22</div>
+    <h1>19 · Async / Await, fetch &amp; Promise.all</h1>
+    <p class="lead">Write code that waits for slow things — without freezing the page and without callbacks inside callbacks.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-19">✏️ Practice this lesson → Lab 19 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+    import { courseApi } from "./mock-apis.js";
+
+    const mock = courseApi;
+
+    const cells = [
+      { md: `<h2>One thread</h2>
+      <ul>
+        <li>Browsers and JavaScript are fundamentally <strong>single-threaded</strong>: one thing runs at a time.</li>
+        <li>While JavaScript code is actively running, the browser is not rendering or responding. Code that blocks (like the
+        busy-wait <code>sleep</code> from lesson 6) or hangs freezes the user experience.</li>
+        <li>Calling web APIs takes time, so XHR delivered its responses later, through event listeners — callbacks — not as a
+        return value.</li>
+        <li>Often several APIs must be called in sequence: separate samples or queries, or <strong>call chaining</strong>, where
+        earlier responses help form later requests (get a team's lineup, then each player's stats).</li>
+        <li>Making those sequences with plain XHR and callbacks is tedious, error-prone, and hard to maintain.</li>
+      </ul>
+      <p>What we want is to write code <em>as if</em> API calls were synchronous — call, get the result, use it — with no
+      callbacks at all. The <code>async</code> and <code>await</code> keywords make this possible, with <code>fetch</code>
+      replacing <code>XMLHttpRequest</code>. Underneath, both rely on <strong>promises</strong>.</p>` },
+
+      { md: `<h2>Promises</h2>
+      <p>A <strong>promise</strong> is an object standing for a value that isn't ready yet. It starts <em>pending</em>, and later
+      becomes either <em>fulfilled</em> (with a value) or <em>rejected</em> (with an error). Creating a promise takes
+      (almost) zero time; the work it represents runs in the background.</p>
+      <p>You can make one yourself with <code>new Promise((resolve, reject) =&gt; …)</code> — call <code>resolve(value)</code>
+      when done, or <code>reject(error)</code> on failure. <code>.then(fn)</code> runs <code>fn</code> with the value when it's
+      ready; <code>.catch(fn)</code> runs on failure.</p>` },
+      { title: "A promise that waits", code: `
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function rollDie() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const n = Math.ceil(Math.random() * 6);
+      if (n === 1) {
+        reject(new Error("rolled a 1 — you lose"));
+      } else {
+        resolve(n);
+      }
+    }, 300);
+  });
+}
+
+const p = wait(200);
+console.log("p is", p);                 // still pending
+p.then(() => console.log("200 ms passed"));
+
+rollDie()
+  .then(n => console.log("rolled", n))
+  .catch(err => console.log("error:", err.message))
+  .finally(() => console.log("done rolling"));
+console.log("this prints first: nothing waited");
+` },
+
+      { md: `<h2>async and await</h2>
+      <p>Inside a function marked <code>async</code>, <code>await somePromise</code> <strong>pauses that function</strong> until the
+      promise settles and then gives you its value — or throws its error. Only the function pauses; the rest of the page keeps
+      running. An <code>async</code> function always returns a promise itself, so its caller awaits it too.</p>` },
+      { title: "Same logic, read top to bottom", code: `
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function countdown(n) {
+  for (let i = n; i > 0; i--) {
+    console.log(i);
+    await wait(300);            // pauses countdown, not the page
+  }
+  console.log("Liftoff!");
+  return "launched";
+}
+
+const result = await countdown(3);
+console.log("result:", result);
+` },
+      { md: `<p>(The examples on this page use <code>await</code> at the very top level of the program. Browsers allow that in
+      <em>module</em> scripts — <code>&lt;script type="module"&gt;</code> — and the console; in an ordinary script, put the code
+      in an <code>async function</code> and call it.)</p>` },
+
+      { md: `<h2>fetch</h2>
+      <p><code>fetch(url)</code> starts a request and returns a promise for a <strong>Response</strong>. The response has
+      <code>ok</code> (true for status 200–299), <code>status</code>, and methods that read the body —
+      <code>resp.json()</code> and <code>resp.text()</code> — which return promises too. So it's two awaits: one for the
+      response to arrive, one for its body to be read.</p>` },
+      { title: "A single API call", mock, liveOk: true, code: `
+async function getTemp(lat, long) {
+  const url = \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`;
+  const resp = await fetch(url);
+  const weather = await resp.json();
+  return weather.hourly.temperature_2m.at(-1);
+}
+
+const t = await getTemp(41.4, -74.4);
+console.log("Middletown, NY:", t, "°C");
+` },
+      { md: `<p>Compare that with the XHR version from lesson 18: no event listeners, no <code>open</code>/<code>send</code>, and the
+      result is simply <em>returned</em>. Now call it many times in sequence — the temperature at every 10° of latitude along
+      the prime meridian:</p>` },
+      { title: "Sequential calls", mock, liveOk: true, timeout: 15000, code: `
+async function getTemp(lat, long) {
+  const url = \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`;
+  const resp = await fetch(url);
+  const weather = await resp.json();
+  return weather.hourly.temperature_2m.at(-1);
+}
+
+async function getMeridianTemps() {
+  const temps = [];
+  for (let i = 0; i <= 90; i += 10) {
+    const t = await getTemp(i, 0);     // waits for each one before starting the next
+    temps.push(t);
+  }
+  return temps;
+}
+
+const startTime = performance.now();
+const meridianTemps = await getMeridianTemps();
+const endTime = performance.now();
+console.log(\`getMeridianTemps took \${Math.round(endTime - startTime)} milliseconds\`);
+console.log(meridianTemps);
+` },
+
+      { md: `<h2>Error handling</h2>
+      <p>With <code>await</code>, a rejected promise becomes an ordinary <strong>exception</strong> at the <code>await</code>, so
+      errors are handled with <code>try</code>/<code>catch</code> — and you can convert them to error values (lesson 16) at the
+      boundary.</p>
+      <div class="callout warn"><strong><code>fetch</code> does not reject on 404 or 500.</strong> It only rejects when no response
+      arrives at all (network down, bad host). An error <em>status</em> is a successful fetch of an error page, so check
+      <code>resp.ok</code> yourself and throw if it's false.</div>` },
+      { title: "Errors as values, with try/catch", mock, timeout: 10000, code: `
+async function getTemp(lat, long) {
+  try {
+    const url = \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`;
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      throw new Error(\`HTTP \${resp.status}\`);
+    }
+    const weather = await resp.json();
+    return [undefined, weather.hourly.temperature_2m.at(-1)];
+  } catch (e) {
+    return [e, undefined];
+  }
+}
+
+async function getMeridianTemps(step) {
+  const temps = [];
+  for (let i = 0; i <= 90; i += step) {
+    const [error, t] = await getTemp(i, 0);
+    if (error) {
+      return [error, undefined];
+    }
+    temps.push(t);
+  }
+  return [undefined, temps];
+}
+
+let [error, temps] = await getMeridianTemps(30);
+console.log(error ? "error: " + error.message : temps);
+
+[error, temps] = await getMeridianTemps(45);       // 0, 45, 90 — fine
+console.log(error ? "error: " + error.message : temps);
+
+const [err2] = await getTemp(120, 0);               // latitude out of range: HTTP 400
+console.log("bad latitude:", err2.message);
+
+try {
+  await fetch("https://offline.example.com/");      // no answer at all: rejects
+} catch (e) {
+  console.log("network:", e.name, e.message);
+}
+` },
+      { md: `<h3>A classic mistake: forgetting await</h3>` },
+      { title: "Missing await", mock, code: `
+async function getTitle(id) {
+  const resp = await fetch("https://jsonplaceholder.typicode.com/todos/" + id);
+  const todo = await resp.json();
+  return todo.title;
+}
+
+const wrong = getTitle(1);          // forgot await: a Promise, not a string
+console.log("without await:", wrong);
+console.log("typeof:", typeof wrong, "| uppercase?", typeof wrong.toUpperCase);
+const right = await getTitle(1);
+console.log("with await:", right.toUpperCase());
+` },
+
+      { md: `<h2>Parallel calls with Promise.all</h2>
+      <p>The sequential version waits for each request before starting the next, so the total time is the sum of all of them.
+      The requests don't depend on each other, so instead: <strong>start them all at once</strong>, collecting the promises (each
+      <code>getTemp(…)</code> call returns immediately with a pending promise), then wait for all of them together with
+      <code>await Promise.all(promises)</code>, which gives an array of results in the same order. Total time ≈ the slowest
+      single request.</p>` },
+      { title: "Parallel", mock, liveOk: true, code: `
+async function getTemp(lat, long) {
+  try {
+    const url = \`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`;
+    const resp = await fetch(url);
+    const weather = await resp.json();
+    return [undefined, weather.hourly.temperature_2m.at(-1)];
+  } catch (e) {
+    return [e, undefined];
+  }
+}
+
+async function getMeridianTemps() {
+  const requests = [];
+  for (let i = 0; i <= 90; i += 10) {
+    requests.push(getTemp(i, 0));       // start every request; don't wait yet
+  }
+  const results = await Promise.all(requests);
+  const temps = [];
+  for (let i = 0; i < results.length; i++) {
+    const [error, t] = results[i];
+    if (error) {
+      return [error, undefined];
+    }
+    temps.push(t);
+  }
+  return [undefined, temps];
+}
+
+const startTime = performance.now();
+const [error, meridianTemps] = await getMeridianTemps();
+const endTime = performance.now();
+console.log(\`getMeridianTemps took \${Math.round(endTime - startTime)} milliseconds\`);
+if (error) {
+  console.log(error);
+} else {
+  console.log(meridianTemps);
+}
+` },
+      { md: `<p>Compare the two timings. (If one promise passed to <code>Promise.all</code> rejects, the whole thing rejects
+      immediately — which is why <code>getTemp</code> converts errors to values here. <code>Promise.allSettled</code> instead waits
+      for every promise and reports each one's outcome.)</p>` },
+      { title: "Chaining, the async way", mock, code: `
+const API = "https://sports.example.com/api";
+
+async function getJson(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    throw new Error(url + " → " + resp.status);
+  }
+  return resp.json();
+}
+
+async function teamStats(team) {
+  const lineup = await getJson(\`\${API}/teams/\${team}/lineup\`);              // step 1
+  const players = await Promise.all(lineup.map(id => getJson(\`\${API}/players/\${id}\`)));  // step 2, in parallel
+  return players.map(p => \`\${p.name}: \${p.hr} HR\`);
+}
+
+console.log(await teamStats("yankees"));
+try {
+  await teamStats("dodgers");
+} catch (e) {
+  console.log("failed:", e.message);
+}
+
+const outcomes = await Promise.allSettled([getJson(API + "/players/p1"), getJson(API + "/players/p99")]);
+console.log(outcomes.map(o => o.status));
+` },
+      { md: `<p>Compare this with the nested callbacks at the end of lesson 18: same requests, a third of the code, and the
+      errors are handled in one place.</p>
+      <h3>Racing a timeout</h3>
+      <p><code>Promise.race</code> settles as soon as the <em>first</em> promise does — handy for giving up on slow requests.</p>` },
+      { title: "Promise.race", mock, code: `
+function timeout(ms) {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error("timed out after " + ms + " ms")), ms));
+}
+
+async function getWithin(url, ms) {
+  const resp = await Promise.race([fetch(url), timeout(ms)]);
+  return resp.json();
+}
+
+try {
+  console.log(await getWithin("https://jsonplaceholder.typicode.com/todos/2", 1000));
+  console.log(await getWithin("https://api.open-meteo.com/v1/forecast?latitude=50&longitude=0", 100));
+} catch (e) {
+  console.log(e.message);
+}
+` },
+
+      { md: `<h2>Async event handlers</h2>
+      <p>Event handlers can be <code>async</code> too. While the request is in flight the page stays fully responsive — show a
+      "loading" message and disable the button so it isn't clicked twice.</p>` },
+      { title: "Fetch on click", mock, liveOk: true, html: `<label>Latitude <input id="lat" value="41.4"></label>
+<label>Longitude <input id="long" value="-74.4"></label>
+<button id="go">Get weather</button>
+<p id="out"></p>`, code: `
+document.getElementById("go").addEventListener("click", async (e) => {
+  const out = document.getElementById("out");
+  const lat = document.getElementById("lat").value;
+  const long = document.getElementById("long").value;
+  e.target.disabled = true;
+  out.textContent = "Loading…";
+  try {
+    const resp = await fetch(\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`);
+    if (!resp.ok) {
+      throw new Error("status " + resp.status);
+    }
+    const data = await resp.json();
+    out.textContent = "Current temp is " + data.hourly.temperature_2m.at(-1) + " C";
+  } catch (err) {
+    out.textContent = "Error: " + err.message;
+  } finally {
+    e.target.disabled = false;
+  }
+});
+` },
+
+      { md: `<h2>Challenges</h2>
+      <p>Write <code>async</code> functions; the tests <code>await</code> them. Requests go to the course's pretend server.</p>` },
+      { title: "Delayed value", prompt: `Write <code>later(value, ms)</code> returning a promise that resolves to
+        <code>value</code> after <code>ms</code> milliseconds.`,
+        solution: `function later(value, ms) {\n  return new Promise(resolve => setTimeout(() => resolve(value), ms));\n}`,
+        checks: [{ label: 'await later("hi", 50)', run: `return await later("hi", 50);` },
+          { label: "resolves after at least the delay", run: `const s = performance.now(); await later(1, 150); return performance.now() - s >= 140;` },
+          { label: "returns a promise immediately", run: `return later(1, 10) instanceof Promise;` }] },
+      { title: "fetch a title", mock, prompt: `Write <code>async function getTitle(id)</code> that fetches
+        <code>https://jsonplaceholder.typicode.com/todos/ID</code> and returns the item's <code>title</code>. If the response isn't
+        <code>ok</code>, throw <code>new Error("HTTP " + status)</code>.`,
+        solution: `async function getTitle(id) {\n  const resp = await fetch("https://jsonplaceholder.typicode.com/todos/" + id);\n  if (!resp.ok) {\n    throw new Error("HTTP " + resp.status);\n  }\n  const todo = await resp.json();\n  return todo.title;\n}`,
+        checks: [{ label: "getTitle(9)", run: `return await getTitle(9);` },
+          { label: "getTitle(999) throws", run: `try { await getTitle(999); return "no error"; } catch (e) { return e.message; }` }] },
+      { title: "Errors as values", mock, prompt: `Write <code>async function safeTemp(lat, long)</code> returning
+        <code>[undefined, t]</code> (the last hourly temperature) on success, <code>["HTTP 400", undefined]</code> for a bad
+        status (use the actual status), and <code>[e.message, undefined]</code> if <code>fetch</code> itself rejects. It must never
+        throw.`,
+        solution: `async function safeTemp(lat, long) {\n  try {\n    const resp = await fetch(\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=\${long}&hourly=temperature_2m\`);\n    if (!resp.ok) {\n      return ["HTTP " + resp.status, undefined];\n    }\n    const data = await resp.json();\n    return [undefined, data.hourly.temperature_2m.at(-1)];\n  } catch (e) {\n    return [e.message, undefined];\n  }\n}`,
+        checks: [{ label: "safeTemp(0, 0)", run: `return await safeTemp(0, 0);` }, { label: "safeTemp(-95, 0)", run: `return await safeTemp(-95, 0);` },
+          { label: "network failure", run: `const real = fetch; fetch = () => Promise.reject(new TypeError("Failed to fetch")); try { return await safeTemp(0, 0); } finally { fetch = real; }` }] },
+      { title: "All at once", mock, prompt: `Write <code>async function tempsAt(lats)</code> that fetches the temperature at
+        longitude 0 for every latitude in the array <strong>in parallel</strong> (start all requests, then
+        <code>Promise.all</code>) and returns the temperatures in the same order.`,
+        solution: `async function getTemp(lat) {\n  const resp = await fetch(\`https://api.open-meteo.com/v1/forecast?latitude=\${lat}&longitude=0&hourly=temperature_2m\`);\n  const data = await resp.json();\n  return data.hourly.temperature_2m.at(-1);\n}\n\nasync function tempsAt(lats) {\n  return Promise.all(lats.map(getTemp));\n}`,
+        checks: [{ label: "tempsAt([0, 30, 60])", run: `return await tempsAt([0, 30, 60]);` },
+          { label: "in parallel (10 latitudes in under 1.5 s)", run: `const s = performance.now(); await tempsAt([0, 10, 20, 30, 40, 50, 60, 70, 80, 90]); return performance.now() - s < 1500;` },
+          { label: "tempsAt([])", run: `return await tempsAt([]);` }] },
+      { title: "Team home runs", mock, prompt: `Using <code>https://sports.example.com/api/teams/TEAM/lineup</code> (an array of
+        player ids) and <code>https://sports.example.com/api/players/ID</code> (a player object with <code>name</code> and
+        <code>hr</code>), write <code>async function totalHomeRuns(team)</code> returning the sum of the team's players'
+        <code>hr</code>. Fetch the players in parallel.`,
+        solution: `async function getJson(url) {\n  const resp = await fetch(url);\n  return resp.json();\n}\n\nasync function totalHomeRuns(team) {\n  const API = "https://sports.example.com/api";\n  const lineup = await getJson(\`\${API}/teams/\${team}/lineup\`);\n  const players = await Promise.all(lineup.map(id => getJson(\`\${API}/players/\${id}\`)));\n  return players.reduce((sum, p) => sum + p.hr, 0);\n}`,
+        checks: [{ label: "yankees", run: `return await totalHomeRuns("yankees");` }, { label: "mets", run: `return await totalHomeRuns("mets");` }] },
+      { title: "Loading state", mock, prompt: `Make <code>#load</code> an <code>async</code> click handler: immediately set
+        <code>#status</code> to <code>Loading…</code> and disable the button; fetch to-do number <code>#id</code> from
+        JSONPlaceholder; then show its title in <code>#status</code> and re-enable the button.`,
+        html: `<input id="id" value="5"> <button id="load">Load to-do</button>
+<p id="status"></p>`,
+        solution: `document.getElementById("load").addEventListener("click", async (e) => {\n  const status = document.getElementById("status");\n  status.textContent = "Loading…";\n  e.target.disabled = true;\n  const id = document.getElementById("id").value;\n  const resp = await fetch("https://jsonplaceholder.typicode.com/todos/" + id);\n  const todo = await resp.json();\n  status.textContent = todo.title;\n  e.target.disabled = false;\n});`,
+        checks: [
+          { label: "right after the click", run: `_t.click("#load"); const now = [_t.text("#status"), _t.el("#load").disabled]; await _t.wait(400); return now;` },
+          { label: "after it loads", run: `_t.type("#id", 12); _t.click("#load"); await _t.wait(400); return [_t.text("#status"), _t.el("#load").disabled];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>JavaScript is single-threaded; slow work must not block — it's delivered later, through promises.</li>
+        <li>A promise is pending, then fulfilled or rejected; <code>.then</code>/<code>.catch</code>, or better, <code>await</code>.</li>
+        <li><code>async function</code>s can <code>await</code>; they always return a promise, so callers await them too.</li>
+        <li><code>const resp = await fetch(url); const data = await resp.json();</code> — and check <code>resp.ok</code>.</li>
+        <li>Errors from awaited promises are exceptions: <code>try</code>/<code>catch</code>, or convert to error values.</li>
+        <li>Independent requests: start them all, then <code>await Promise.all(promises)</code>. Also <code>allSettled</code> and <code>race</code>.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

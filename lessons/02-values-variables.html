@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>02 · Values, Types &amp; Variables — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 2 of 22</div>
+    <h1>02 · Values, Types &amp; Variables</h1>
+    <p class="lead">The raw material of every program: pieces of data, the kinds of data they are, and named boxes to keep them in.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-02">✏️ Practice this lesson → Lab 02 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Programs transform data</h2>
+      <p>Most programs follow the same shape: take <strong>input</strong> data in some format, <strong>transform</strong>
+      it according to rules, and produce <strong>output</strong> in another format.</p>
+      <table>
+        <tr><th>Input</th><th>Rule</th><th>Output</th></tr>
+        <tr><td>A table of names and birthdates</td><td>Keep only people 18 or older</td><td>Names and ages as CSV text</td></tr>
+        <tr><td>A stream of time-stamped temperature readings</td><td>Average the last hour</td><td>The updated average, appended to a file</td></tr>
+        <tr><td>A page of text</td><td>Summarize it</td><td>A short summary shown in the browser</td></tr>
+      </table>
+      <p>To write any of those programs, we first need a way to represent data — <strong>values</strong> — and a way
+      to hold on to it while we work — <strong>variables</strong>.</p>` },
+
+      { md: `<h2>Values and their types</h2>
+      <p>Every individual piece of data in JavaScript is a <strong>value</strong>, and every value has a
+      <strong>type</strong> that says what kind of data it is and what you can do with it. The basic
+      (<em>primitive</em>) types you'll use constantly are:</p>
+      <table>
+        <tr><th>Type</th><th>Examples</th><th>Used for</th></tr>
+        <tr><td><code>string</code></td><td><code>"The dog's name is Rover."</code>, <code>'hi'</code>, <code>\`hi\`</code></td><td>Text of any length — even empty: <code>""</code></td></tr>
+        <tr><td><code>number</code></td><td><code>3</code>, <code>3.14</code>, <code>-40</code>, <code>7.654E97</code></td><td>All numbers — JavaScript doesn't separate whole numbers from decimals</td></tr>
+        <tr><td><code>boolean</code></td><td><code>true</code>, <code>false</code></td><td>Yes/no answers</td></tr>
+        <tr><td><code>undefined</code></td><td><code>undefined</code></td><td>"No value has been given yet"</td></tr>
+        <tr><td><code>null</code></td><td><code>null</code></td><td>"Deliberately empty"</td></tr>
+      </table>
+      <p>Values also combine into larger units: an <strong>array</strong> is an ordered list such as
+      <code>["the", "dog's", "name"]</code>, and an <strong>object</strong> groups named values such as
+      <code>{ name: "Rover", age: 8 }</code>. Each gets its own lesson later.</p>
+      <p>The <code>typeof</code> operator tells you a value's type, as a string:</p>` },
+      { title: "typeof", code: `
+console.log(typeof "Rover");
+console.log(typeof 3.14);
+console.log(typeof true);
+console.log(typeof undefined);
+console.log(typeof [1, 2, 3]);
+console.log(typeof { name: "Rover" });
+console.log(typeof null);       // a famous quirk: null reports "object"
+` },
+      { md: `<p>You'll also see <code>typeof(x)</code> written with parentheses — that works too, because the
+      parentheses just group <code>x</code>. <code>typeof</code> is an operator, like <code>-</code>, not a function.</p>` },
+
+      { md: `<h2>Numbers and arithmetic</h2>
+      <p>The arithmetic operators are <code>+</code> <code>-</code> <code>*</code> <code>/</code>, plus
+      <code>%</code> (<strong>remainder</strong> after division) and <code>**</code> (power). The usual
+      precedence rules apply — <code>*</code>, <code>/</code> and <code>%</code> before <code>+</code> and
+      <code>-</code> — and parentheses override them.</p>` },
+      { title: "Arithmetic operators", code: `
+console.log(7 + 2, 7 - 2, 7 * 2, 7 / 2);
+console.log(7 % 2);        // remainder: 7 = 3*2 + 1
+console.log(17 % 5);       // 17 = 3*5 + 2
+console.log(2 ** 10);      // 2 to the 10th power
+console.log(2 + 3 * 4);    // * first
+console.log((2 + 3) * 4);  // parentheses first
+console.log(-7 / 2);
+console.log(1e3, 7.654e97);
+` },
+      { md: `<p>The <code>Math</code> object holds common number functions:</p>` },
+      { title: "The Math toolbox", code: `
+console.log(Math.round(2.5), Math.round(2.4));
+console.log(Math.floor(12.9), Math.ceil(12.1));   // round down / up
+console.log(Math.trunc(-4.7));                    // drop the decimal part
+console.log(Math.max(3, 9, 4), Math.min(3, 9, 4));
+console.log(Math.abs(-12), Math.sqrt(81), Math.PI);
+console.log(Math.random());                       // 0 <= x < 1, different every run
+` },
+      { md: `<div class="callout warn"><strong>Decimals aren't always exact.</strong> Computers store numbers in
+      binary, and some decimals (like 0.1) can't be represented exactly, so tiny errors appear. Round when you
+      display money and measurements, and never compare decimals with <code>===</code> expecting an exact match.
+      Dividing by zero gives <code>Infinity</code>, and nonsense arithmetic gives <code>NaN</code> —
+      "Not a Number" — which, confusingly, has type <code>number</code>.</div>` },
+      { title: "Surprising numbers", code: `
+console.log(0.1 + 0.2);
+console.log((0.1 + 0.2).toFixed(2));   // a string, rounded to 2 places
+console.log(1 / 0, -1 / 0);
+console.log(0 / 0, "abc" * 2);
+console.log(typeof NaN);
+console.log(Number.MAX_SAFE_INTEGER);
+` },
+
+      { md: `<h2>Strings, briefly</h2>
+      <p>Strings get a whole lesson of their own (lesson 8). For now you need two things: <code>+</code> joins
+      strings end to end (<em>concatenation</em>), and <code>.length</code> tells you how many characters a
+      string has. Single, double, and backtick quotes all make strings; backticks also let you drop values into
+      the text with <code>\${…}</code>.</p>` },
+      { title: "Joining text", code: `
+console.log("Smith" + ", " + "John");
+console.log("abc".length);
+const player = 2;
+const points = 99;
+console.log(\`Player \${player} has \${points} points\`);
+console.log("He said 'hi'", 'and "bye"');
+` },
+
+      { md: `<h2>Variables: naming values</h2>
+      <p>A <strong>variable</strong> is a named place to store a value so you can use it later. Variables:</p>
+      <ul>
+        <li>have a <strong>name</strong>;</li>
+        <li>store a <strong>value</strong> (which you can read by using the name);</li>
+        <li>are either <strong>constant</strong> (<code>const</code>: can't be reassigned) or <strong>mutable</strong>
+        (<code>let</code>: can be given a new value);</li>
+        <li>have a <strong>scope</strong> — the region of the program where the name exists;</li>
+        <li>have no fixed type: the type is whatever value is stored <em>right now</em> (<strong>dynamic typing</strong>).</li>
+      </ul>
+      <p>You create (<em>declare</em>) a variable with <code>let</code> or <code>const</code>, and give it a value
+      with <code>=</code>, which means "store", not "equals".</p>` },
+      { title: "let and const", code: `
+let x = 9;
+const name = "Rover";
+console.log(x, typeof x);
+console.log(name, typeof name);
+
+x = x + 1;            // read x, add 1, store the result back in x
+console.log(x);
+
+const pi = 3.1415;
+console.log(pi * 2);
+` },
+      { md: `<p>A <code>const</code> can't be given a new value — trying is an error. That's a feature: it
+      guarantees the value you see at the top is the value you get everywhere.</p>` },
+      { title: "Reassigning a const", expectError: true, code: `
+const pi = 3.1415;
+console.log(typeof pi);
+pi = 9;                // TypeError: Assignment to constant variable.
+console.log("never printed");
+` },
+      { md: `<div class="callout tip"><strong>Prefer <code>const</code>.</strong> Use <code>const</code> by default
+      and switch to <code>let</code> only when the variable really must change. Don't use the old
+      <code>var</code> keyword you'll see in older code online — it has confusing scope rules, and <code>let</code>
+      and <code>const</code> replace it completely.</div>
+      <h3>Updating variables</h3>
+      <p>Changing a variable based on its current value is so common that it has shortcuts:</p>
+      <table>
+        <tr><th>Shortcut</th><th>Means</th></tr>
+        <tr><td><code>x += 5</code></td><td><code>x = x + 5</code></td></tr>
+        <tr><td><code>x -= 5</code></td><td><code>x = x - 5</code></td></tr>
+        <tr><td><code>x *= 2</code></td><td><code>x = x * 2</code></td></tr>
+        <tr><td><code>x /= 2</code></td><td><code>x = x / 2</code></td></tr>
+        <tr><td><code>x++</code> / <code>x--</code></td><td><code>x = x + 1</code> / <code>x = x - 1</code></td></tr>
+      </table>` },
+      { title: "Compound assignment", code: `
+let score = 10;
+score += 5;
+console.log(score);
+score *= 2;
+console.log(score);
+score--;
+console.log(score);
+
+let s = "a";
+s += "bc";            // works for strings too
+console.log(s);
+` },
+      { md: `<h3>Naming rules</h3>
+      <ul>
+        <li>Names may contain letters, digits, <code>_</code> and <code>$</code>, but can't start with a digit.</li>
+        <li>Names are <strong>case-sensitive</strong>: <code>n</code> and <code>N</code> are two different variables.</li>
+        <li>Keywords like <code>let</code>, <code>if</code>, or <code>return</code> can't be names.</li>
+        <li>Convention: <strong>camelCase</strong> — <code>firstName</code>, <code>totalMinutes</code>,
+        <code>isGoodDog</code>. Choose names that say what the value <em>means</em>.</li>
+      </ul>` },
+
+      { md: `<h2>Dynamic typing</h2>
+      <p>A <code>let</code> variable can hold a number now and a string later; <code>typeof</code> reports the type of
+      whatever is stored at that moment.</p>` },
+      { title: "The type follows the value", code: `
+let n = 99;
+console.log(typeof n);
+n = "Rover";
+console.log(typeof n);
+n = true;
+console.log(typeof n);
+` },
+      { md: `<div class="callout warn"><strong>A classic typo.</strong> The original version of the example above
+      had <code>N = 'Rover';</code> on the second line — capital <code>N</code>. Because names are case-sensitive,
+      that's a <em>different</em>, undeclared variable, and in modern JavaScript it's an error. Run it and see.</div>` },
+      { title: "Case matters", expectError: true, code: `
+"use strict";
+let n = 99;
+N = "Rover";
+console.log(typeof n);
+` },
+
+      { md: `<h2>Converting between types</h2>
+      <p>Text typed into a web page always arrives as a <strong>string</strong>, even when it looks like a number.
+      <code>+</code> with a string <em>joins</em> instead of adding, so convert first with <code>Number(…)</code>.
+      Going the other way, <code>String(…)</code> turns anything into text.</p>` },
+      { title: "\"5\" is not 5", code: `
+const typed = "5";
+console.log(typed + 3);            // joins: "53"
+console.log(Number(typed) + 3);    // adds: 8
+console.log(typed * 3);            // * converts automatically: 15
+console.log(Number("3.75"), Number(""), Number("abc"));
+console.log(parseInt("42px"), parseFloat("3.5kg"));
+console.log(String(42) + "!", (42).toString().length);
+` },
+
+      { md: `<h2>Scope: where a name exists</h2>
+      <p>Curly braces <code>{ }</code> make a <strong>block</strong>. A variable declared with <code>let</code> or
+      <code>const</code> exists from its declaration to the end of the block it's in, and is invisible outside.
+      Inner blocks can see outer variables. If an inner block declares a variable with the <em>same</em> name, it
+      <strong>shadows</strong> the outer one until the inner block ends — legal, but confusing, so avoid it.</p>` },
+      { title: "Blocks, scope and shadowing", expectError: true, code: `
+{
+  let x = 9;
+  console.log(x);        // 9
+  {
+    let x = 10;          // a different x that shadows the outer one
+    console.log(x);      // 10
+    let y = 99;
+    console.log(y);      // 99
+  }
+  console.log(x);        // 9 again: the inner x is gone
+  console.log(y);        // ReferenceError: y only existed in the inner block
+}
+` },
+      { md: `<p>You also can't use a <code>let</code>/<code>const</code> variable <em>before</em> the line that
+      declares it, even in the same block:</p>` },
+      { title: "Use before declaration", expectError: true, code: `
+console.log("start");
+console.log(total);     // ReferenceError: Cannot access 'total' before initialization
+const total = 10;
+` },
+
+      { md: `<h2>Challenges</h2>
+      <p>The tests read the variables your code leaves behind, so use exactly the names given.</p>` },
+      { title: "Describe yourself", prompt: `Declare <code>firstName</code> (the string <code>"Ada"</code>),
+        <code>age</code> (the number <code>36</code>), and <code>likesCode</code> (<code>true</code>). Use
+        <code>const</code> for all three.`,
+        solution: `const firstName = "Ada";\nconst age = 36;\nconst likesCode = true;`,
+        checks: [{ expr: "firstName" }, { expr: "age" }, { expr: "likesCode" }, { expr: "typeof age" }] },
+      { title: "Rectangle", prompt: `Given <code>const width = 7;</code> and <code>const height = 4;</code>
+        (keep them), compute <code>area</code> and <code>perimeter</code> from those two variables.`,
+        starter: `const width = 7;\nconst height = 4;\n\n`,
+        solution: `const width = 7;\nconst height = 4;\nconst area = width * height;\nconst perimeter = 2 * (width + height);`,
+        checks: [{ expr: "area" }, { expr: "perimeter" }] },
+      { title: "Predict the types", prompt: `Without running anything first, set each variable to the string
+        that <code>typeof</code> would produce for the value in the comment — for example
+        <code>const t1 = "number";</code>. Then check your answers.`,
+        starter: `const t1 = "?";   // typeof 42\nconst t2 = "?";   // typeof "42"\nconst t3 = "?";   // typeof false\nconst t4 = "?";   // typeof undefined\nconst t5 = "?";   // typeof (1 / 0)\nconst t6 = "?";   // typeof "3" * 2  (careful: what does typeof apply to?)`,
+        solution: `const t1 = "number";\nconst t2 = "string";\nconst t3 = "boolean";\nconst t4 = "undefined";\nconst t5 = "number";\nconst t6 = "number";`,
+        hint: `<code>typeof</code> binds tighter than <code>*</code>, so <code>typeof "3" * 2</code> is
+        <code>("string") * 2</code> — which is <code>NaN</code>. And what is <code>typeof NaN</code>?`,
+        checks: [{ expr: "t1" }, { expr: "t2" }, { expr: "t3" }, { expr: "t4" }, { expr: "t5" }, { expr: "t6" }] },
+      { title: "Add what was typed", prompt: `Two form fields gave us <code>const a = "12";</code> and
+        <code>const b = "30";</code> (keep them). Make <code>sum</code> the <em>number</em> 42 by converting them,
+        and <code>joined</code> the string <code>"1230"</code> by joining them.`,
+        starter: `const a = "12";\nconst b = "30";\n\n`,
+        solution: `const a = "12";\nconst b = "30";\nconst sum = Number(a) + Number(b);\nconst joined = a + b;`,
+        checks: [{ expr: "sum" }, { expr: "typeof sum" }, { expr: "joined" }] },
+      { title: "Count it up", prompt: `Start <code>let count = 0;</code>. Using only <code>+=</code>,
+        <code>*=</code>, and <code>++</code> (one statement each, in this order), add 3, then double it, then add one.
+        Then declare <code>const result = count;</code>.`,
+        starter: `let count = 0;\n`,
+        solution: `let count = 0;\ncount += 3;\ncount *= 2;\ncount++;\nconst result = count;`,
+        checks: [{ expr: "result" }, { expr: "count" }] },
+      { title: "Swap", prompt: `Swap the values of <code>left</code> and <code>right</code> so that
+        <code>left</code> ends up <code>"R"</code> and <code>right</code> ends up <code>"L"</code>. Don't type the
+        letters again — use a third variable to hold one value while you move the other.`,
+        starter: `let left = "L";\nlet right = "R";\n\n// swap them here\n`,
+        solution: `let left = "L";\nlet right = "R";\n\nconst temp = left;\nleft = right;\nright = temp;`,
+        checks: [{ expr: "left" }, { expr: "right" }] },
+      { title: "Fix the scope", prompt: `This program should leave <code>message</code> equal to
+        <code>"Hello, Rover"</code>, but <code>greeting</code> is trapped inside a block. Rearrange it so it works
+        (keep the variable names).`,
+        starter: `const name = "Rover";\n{\n  const greeting = "Hello, ";\n}\nconst message = greeting + name;`,
+        solution: `const name = "Rover";\nconst greeting = "Hello, ";\nconst message = greeting + name;`,
+        checks: [{ expr: "message" }] },
+      { title: "Split a bill", prompt: `A dinner costs <code>const bill = 87.5;</code> plus a 20% tip, shared by
+        <code>const people = 4;</code> (keep both). Compute <code>total</code> (bill plus tip) and
+        <code>each</code>, and log <code>Each person pays $26.25</code> using <code>each.toFixed(2)</code>.`,
+        starter: `const bill = 87.5;\nconst people = 4;\n\n`,
+        solution: `const bill = 87.5;\nconst people = 4;\nconst total = bill * 1.2;\nconst each = total / people;\nconsole.log("Each person pays $" + each.toFixed(2));`,
+        logs: true, checks: [{ expr: "total" }, { expr: "each" }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>The primitive types are <code>string</code>, <code>number</code>, <code>boolean</code>,
+        <code>undefined</code>, and <code>null</code>; <code>typeof</code> reports a value's type.</li>
+        <li>Arithmetic: <code>+ - * / % **</code>, with <code>Math.floor</code>, <code>Math.round</code> and friends.
+        Watch for decimal rounding, <code>NaN</code>, and <code>Infinity</code>.</li>
+        <li>Declare with <code>const</code> (preferred) or <code>let</code> (when it must change); never <code>var</code>.</li>
+        <li><code>=</code> stores; <code>+=</code>, <code>++</code> and friends update.</li>
+        <li>Variables live in the block where they're declared. Inner blocks see outer names; avoid shadowing.</li>
+        <li>Text from a page is a string — convert with <code>Number(…)</code> before doing arithmetic.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

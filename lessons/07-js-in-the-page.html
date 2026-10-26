@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>07 · JavaScript in the Page — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 7 of 22</div>
+    <h1>07 · JavaScript in the Page</h1>
+    <p class="lead">Connect your code to HTML: run it from a page, read what the user typed, and write results back.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-07">✏️ Practice this lesson → Lab 07 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Where JavaScript lives in a page</h2>
+      <p>A web page is HTML. JavaScript gets into it in two ways: inside a <code>&lt;script&gt;</code> element, or as
+      an <strong>event handler</strong> attribute such as <code>onclick</code> or <code>onload</code> — or both:</p>
+      <pre class="code" data-lang="html">&lt;html&gt;
+&lt;body onload="sayHello()"&gt;
+  &lt;script&gt;
+    function sayHello() {
+      console.log('hello');
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      <p>The browser reads the HTML <strong>top to bottom</strong>. When it reaches a <code>&lt;script&gt;</code>, it
+      runs that code right away, before reading any further. The <code>onload</code> attribute runs its code later,
+      once the whole page has finished loading.</p>
+      <h3>How examples work from here on</h3>
+      <p>Examples and challenges in this lesson come with a little page of HTML. Your code is placed in a
+      <code>&lt;script&gt;</code> at the <strong>end</strong> of that page's <code>&lt;body&gt;</code>, so every element
+      already exists when your code runs. The live page is shown under the console — click its buttons and type into
+      its inputs. (It's sandboxed: it can't reach the rest of this site.)</p>` },
+      { title: "A script and an inline handler", html: `<p>The page has loaded.</p>
+<button onclick="sayHello()">Say hello</button>`, code: `
+function sayHello() {
+  console.log("hello");
+}
+
+console.log("This line runs as soon as the script is reached.");
+` },
+      { md: `<p>Click <strong>Say hello</strong> a few times. The button's <code>onclick</code> attribute calls the
+      function <code>sayHello</code> that your script defined. Each click logs another line.</p>` },
+
+      { md: `<h2>External .js files</h2>
+      <p>Most commonly, JavaScript goes in its own <code>.js</code> file, and the HTML references it with
+      <code>src</code>:</p>
+      <pre class="code">// HelloWorld.js
+function sayHello() {
+  console.log('hello');
+}</pre>
+      <pre class="code" data-lang="html">&lt;!-- HelloWorld.html --&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;script src="./HelloWorld.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body onload="sayHello()"&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+      <p>Advantages of external files:</p>
+      <ul>
+        <li><strong>Re-use and sharing</strong> — many pages can load the same file.</li>
+        <li><strong>Testing</strong> — code in its own file can be loaded by automated tests (unit tests).</li>
+        <li><strong>Security</strong> — a page can be configured (with a <em>Content Security Policy</em>) to refuse all
+        inline JavaScript, which blocks a whole family of attacks called cross-site scripting (XSS).</li>
+        <li><strong>Caching</strong> — the browser downloads the file once and reuses it.</li>
+      </ul>
+      <div class="callout warn"><strong>Scripts in the head run too early to see the body.</strong> A script in
+      <code>&lt;head&gt;</code> runs before the <code>&lt;body&gt;</code> exists, so
+      <code>document.getElementById(…)</code> finds nothing there. That's fine for <em>defining</em> functions that run
+      later (from <code>onload</code> or <code>onclick</code>). To run code against the page immediately, put the script
+      at the end of the body, or use <code>&lt;script src="app.js" defer&gt;</code>, which waits until the page is read.</div>` },
+
+      { md: `<h2>Reading input from the page</h2>
+      <p>To make testing your code easier, we add input fields to the page and have JavaScript read from them.</p>
+      <p><strong>Step 1:</strong> add an <code>&lt;input&gt;</code> element, giving it at least an <code>id</code> and a
+      <code>type</code>:</p>
+      <pre class="code" data-lang="html">&lt;input id="arg1" type="text" placeholder="arg1"&gt;</pre>
+      <p><strong>Step 2:</strong> in JavaScript, find the element by its id, read its <code>value</code>, and if
+      necessary convert it to the type you need:</p>
+      <pre class="code">const arg1Text = document.getElementById('arg1').value;
+const arg1 = Number(arg1Text);</pre>
+      <p><code>document</code> is the page; <code>getElementById</code> returns the element with that id (or
+      <code>null</code> if there isn't one); <code>.value</code> is whatever is in the box <em>right now</em> — always a
+      string.</p>` },
+      { title: "Read a value when the button is clicked", html: `<input id="name" type="text" placeholder="Your name" value="Ada">
+<button onclick="showName()">Show</button>`, code: `
+function showName() {
+  const text = document.getElementById("name").value;
+  console.log("The box contains:", text, "— a", typeof text);
+}
+` },
+      { md: `<h2>Writing output to the page</h2>
+      <p>Setting <code>.value</code> puts text into an input. For ordinary elements like <code>&lt;p&gt;</code> or
+      <code>&lt;span&gt;</code>, set <code>.textContent</code>.</p>` },
+      { title: "Add numbers (the complete example)", html: `<input id="arg1" type="text" placeholder="arg1"><br>
+<input id="arg2" type="text" placeholder="arg2"><br>
+<button onclick="addNumbersOnClickHandler()">Add numbers</button><br>
+<input id="res" type="text">`, code: `
+function addNumbers(x, y) {
+  return x + y;
+}
+
+function addNumbersOnClickHandler() {
+  const arg1Text = document.getElementById('arg1').value;
+  const arg1 = Number(arg1Text);
+  const arg2Text = document.getElementById('arg2').value;
+  const arg2 = Number(arg2Text);
+  const res = addNumbers(arg1, arg2);
+  document.getElementById('res').value = res;
+}
+` },
+      { md: `<p>Type two numbers and click. Notice the structure — it's the pure/impure split from lesson 3:
+      <code>addNumbers</code> is a pure function that does the work, and the click handler is the impure "edge" that
+      reads the page, calls it, and writes the result. Now try removing the two <code>Number(…)</code> calls and adding
+      2 and 3 again.</p>
+      <div class="callout warn"><strong>Read the value when you need it.</strong> A very common bug is reading
+      <code>.value</code> once, when the script first runs (the boxes are still empty), instead of inside the click
+      handler. Always read inputs inside the function that uses them.</div>` },
+      { title: "The read-too-early bug", html: `<input id="qty" placeholder="Type a number, then click"> <button onclick="report()">Report</button>`, code: `
+const qtyAtStart = document.getElementById("qty").value;   // read once, at load: ""
+
+function report() {
+  const qtyNow = document.getElementById("qty").value;     // read at click time
+  console.log("at start:", JSON.stringify(qtyAtStart), " now:", JSON.stringify(qtyNow));
+}
+` },
+
+      { md: `<h2>Validating input</h2>
+      <p>Users type anything. <code>Number("")</code> is <code>0</code> (so an empty box silently counts as zero), and
+      <code>Number("abc")</code> is <code>NaN</code>. Check before you compute, and tell the user what's wrong.</p>` },
+      { title: "Validate, then compute", html: `<label>Width <input id="w"></label>
+<label>Height <input id="h"></label>
+<button onclick="computeArea()">Area</button>
+<p id="out"></p>`, code: `
+function readNumber(id) {
+  const text = document.getElementById(id).value.trim();
+  if (text === "") {
+    return NaN;
+  }
+  return Number(text);
+}
+
+function computeArea() {
+  const w = readNumber("w");
+  const h = readNumber("h");
+  const out = document.getElementById("out");
+  if (Number.isNaN(w) || Number.isNaN(h)) {
+    out.textContent = "Please enter two numbers.";
+  } else if (w <= 0 || h <= 0) {
+    out.textContent = "Width and height must be positive.";
+  } else {
+    out.textContent = "Area: " + w * h;
+  }
+}
+` },
+
+      { md: `<h2>Other kinds of input</h2>
+      <table>
+        <tr><th>Element</th><th>Read it with</th><th>Gives</th></tr>
+        <tr><td><code>&lt;input type="text"&gt;</code>, <code>&lt;textarea&gt;</code></td><td><code>.value</code></td><td>string</td></tr>
+        <tr><td><code>&lt;input type="number"&gt;</code></td><td><code>.value</code> / <code>.valueAsNumber</code></td><td>string / number (NaN if empty)</td></tr>
+        <tr><td><code>&lt;input type="checkbox"&gt;</code></td><td><code>.checked</code></td><td>boolean</td></tr>
+        <tr><td><code>&lt;select&gt;</code></td><td><code>.value</code></td><td>the chosen <code>&lt;option&gt;</code>'s value</td></tr>
+      </table>` },
+      { title: "Checkbox, select and number", html: `<input id="qty" type="number" value="2" min="1">
+<select id="size">
+  <option value="8">Small ($8)</option>
+  <option value="11" selected>Medium ($11)</option>
+  <option value="14">Large ($14)</option>
+</select>
+<label><input id="extra" type="checkbox"> Extra cheese (+$1.50 each)</label>
+<button onclick="price()">Price</button>
+<p id="total"></p>`, code: `
+function price() {
+  const qty = document.getElementById("qty").valueAsNumber;
+  const each = Number(document.getElementById("size").value);
+  const extra = document.getElementById("extra").checked;
+  const unit = extra ? each + 1.5 : each;
+  document.getElementById("total").textContent = "Total: $" + (qty * unit).toFixed(2);
+}
+` },
+
+      { md: `<h2>Live updates and addEventListener</h2>
+      <p>Instead of an <code>onclick</code> attribute in the HTML, JavaScript can attach a handler itself with
+      <code>addEventListener(eventName, function)</code>. This keeps the HTML free of code, and lets you listen for
+      events like <code>"input"</code>, which fires on every keystroke. Lesson 15 covers events fully.</p>` },
+      { title: "Convert as you type", html: `<label>Celsius <input id="c" value="20"></label>
+<p id="f"></p>`, code: `
+function cToF(c) {
+  return c * 9 / 5 + 32;
+}
+
+function update() {
+  const c = Number(document.getElementById("c").value);
+  document.getElementById("f").textContent = c + "°C = " + cToF(c).toFixed(1) + "°F";
+}
+
+document.getElementById("c").addEventListener("input", update);
+update();   // show the starting value immediately
+` },
+      { md: `<div class="callout warn"><strong>Pass the function, don't call it.</strong>
+      <code>addEventListener("input", update)</code> hands over the function to call later.
+      <code>addEventListener("input", update())</code> calls it <em>now</em> and hands over its return value
+      (<code>undefined</code>). And if an id is misspelled, <code>getElementById</code> returns <code>null</code> and
+      the next line fails with "Cannot read properties of null".</div>` },
+      { title: "A misspelled id", expectError: true, html: `<input id="email">`, code: `
+const box = document.getElementById("emial");
+console.log(box);
+box.value = "ada@example.com";
+` },
+
+      { md: `<h2>Challenges</h2>
+      <p>The tests type into the page and click its buttons, then read the results. Use the ids and function names
+      given in each challenge.</p>` },
+      { title: "Greeter", prompt: `The button calls <code>greet()</code>. Write it so that it puts
+        <code>Hello, NAME!</code> into the paragraph <code>#greeting</code>, using the text from <code>#name</code>.`,
+        html: `<input id="name" placeholder="Your name">
+<button onclick="greet()">Greet</button>
+<p id="greeting"></p>`,
+        starter: `function greet() {\n  // your code here\n}`,
+        solution: `function greet() {\n  const name = document.getElementById("name").value;\n  document.getElementById("greeting").textContent = "Hello, " + name + "!";\n}`,
+        checks: [
+          { label: "type Ada, click", run: `_t.type("#name", "Ada"); _t.click("button"); return _t.text("#greeting");` },
+          { label: "type Rover, click", run: `_t.type("#name", "Rover"); _t.click("button"); return _t.text("#greeting");` },
+        ] },
+      { title: "Multiply", prompt: `Write <code>multiplyOnClick()</code> (the button calls it) that multiplies the two
+        inputs and puts the product in <code>#res</code>'s <code>value</code>.`,
+        html: `<input id="a"> × <input id="b">
+<button onclick="multiplyOnClick()">=</button>
+<input id="res">`,
+        starter: `function multiplyOnClick() {\n\n}`,
+        solution: `function multiplyOnClick() {\n  const a = Number(document.getElementById("a").value);\n  const b = Number(document.getElementById("b").value);\n  document.getElementById("res").value = a * b;\n}`,
+        checks: [
+          { label: "6 × 7", run: `_t.type("#a", 6); _t.type("#b", 7); _t.click("button"); return _t.value("#res");` },
+          { label: "2.5 × -4", run: `_t.type("#a", 2.5); _t.type("#b", -4); _t.click("button"); return _t.value("#res");` },
+        ] },
+      { title: "Temperature converter", prompt: `Write <code>convert()</code>. If the checkbox <code>#toC</code> is
+        ticked, treat the input as Fahrenheit and convert to Celsius; otherwise Celsius to Fahrenheit. Show the result
+        rounded to 1 decimal place (<code>.toFixed(1)</code>) in <code>#out</code>, followed by
+        <code>°C</code> or <code>°F</code> — for example <code>212.0°F</code>.`,
+        html: `<input id="temp" value="100">
+<label><input id="toC" type="checkbox"> input is Fahrenheit</label>
+<button onclick="convert()">Convert</button>
+<p id="out"></p>`,
+        starter: `function convert() {\n\n}`,
+        solution: `function convert() {\n  const t = Number(document.getElementById("temp").value);\n  const toC = document.getElementById("toC").checked;\n  const out = document.getElementById("out");\n  if (toC) {\n    out.textContent = ((t - 32) * 5 / 9).toFixed(1) + "°C";\n  } else {\n    out.textContent = (t * 9 / 5 + 32).toFixed(1) + "°F";\n  }\n}`,
+        checks: [
+          { label: "100, unticked", run: `_t.type("#temp", 100); _t.click("button"); return _t.text("#out");` },
+          { label: "98.6, ticked", run: `_t.type("#temp", 98.6); _t.el("#toC").checked = true; _t.click("button"); return _t.text("#out");` },
+          { label: "-40, ticked", run: `_t.type("#temp", -40); _t.el("#toC").checked = true; _t.click("button"); return _t.text("#out");` },
+        ] },
+      { title: "Average of what was entered", prompt: `The page has inputs <code>#in1</code> … <code>#in5</code>.
+        Write <code>average()</code> that puts the average of only the boxes the user actually filled in into
+        <code>#avg</code> (as text). If none are filled in, show <code>no values</code>.`,
+        html: `<input id="in1"> <input id="in2"> <input id="in3"> <input id="in4"> <input id="in5">
+<button onclick="average()">Average</button>
+<p id="avg"></p>`,
+        starter: `function average() {\n\n}`,
+        solution: `function average() {\n  let total = 0;\n  let count = 0;\n  for (let i = 1; i <= 5; i++) {\n    const text = document.getElementById("in" + i).value;\n    if (text !== "") {\n      total += Number(text);\n      count++;\n    }\n  }\n  document.getElementById("avg").textContent = count === 0 ? "no values" : String(total / count);\n}`,
+        hint: `Loop <code>i</code> from 1 to 5 and build each id with <code>"in" + i</code>. Keep a running total and a
+        count of non-empty boxes.`,
+        checks: [
+          { label: "10, 20 and three empty", run: `_t.type("#in1", 10); _t.type("#in3", 20); _t.click("button"); return _t.text("#avg");` },
+          { label: "all five", run: `[1,2,3,4,5].forEach(i => _t.type("#in" + i, i)); _t.click("button"); return _t.text("#avg");` },
+          { label: "none", run: `[1,2,3,4,5].forEach(i => _t.type("#in" + i, "")); _t.click("button"); return _t.text("#avg");` },
+        ] },
+      { title: "Validated tip calculator", prompt: `Write <code>calcTip()</code>. Read the bill from <code>#bill</code>
+        and the tip percent from <code>#pct</code>. If the bill is empty, not a number, or not positive, show
+        <code>Enter a valid bill</code> in <code>#msg</code>. Otherwise show <code>Tip: $X, total: $Y</code> with both
+        amounts to 2 decimal places.`,
+        html: `<label>Bill $<input id="bill"></label>
+<label>Tip <select id="pct"><option value="15">15%</option><option value="18" selected>18%</option><option value="20">20%</option></select></label>
+<button onclick="calcTip()">Calculate</button>
+<p id="msg"></p>`,
+        starter: `function calcTip() {\n\n}`,
+        solution: `function calcTip() {\n  const text = document.getElementById("bill").value.trim();\n  const bill = Number(text);\n  const msg = document.getElementById("msg");\n  if (text === "" || Number.isNaN(bill) || bill <= 0) {\n    msg.textContent = "Enter a valid bill";\n    return;\n  }\n  const pct = Number(document.getElementById("pct").value);\n  const tip = bill * pct / 100;\n  msg.textContent = "Tip: $" + tip.toFixed(2) + ", total: $" + (bill + tip).toFixed(2);\n}`,
+        checks: [
+          { label: "$50 at 18%", run: `_t.type("#bill", 50); _t.click("button"); return _t.text("#msg");` },
+          { label: "$64.30 at 20%", run: `_t.type("#bill", 64.3); _t.el("#pct").value = "20"; _t.click("button"); return _t.text("#msg");` },
+          { label: "empty", run: `_t.type("#bill", ""); _t.click("button"); return _t.text("#msg");` },
+          { label: "abc", run: `_t.type("#bill", "abc"); _t.click("button"); return _t.text("#msg");` },
+          { label: "-5", run: `_t.type("#bill", -5); _t.click("button"); return _t.text("#msg");` },
+        ] },
+      { title: "Character counter", prompt: `Use <code>addEventListener</code> so that, <strong>as the user types</strong>
+        in the <code>#msg</code> textarea, <code>#count</code> shows <code>N / 140</code> (N = number of characters). When
+        N is over 140, also add the word <code>— too long</code>: <code>145 / 140 — too long</code>. Show
+        <code>0 / 140</code> before anything is typed.`,
+        html: `<textarea id="msg" rows="3" cols="40"></textarea>
+<p id="count"></p>`,
+        starter: `// your code here\n`,
+        solution: `function updateCount() {\n  const n = document.getElementById("msg").value.length;\n  let text = n + " / 140";\n  if (n > 140) {\n    text += " — too long";\n  }\n  document.getElementById("count").textContent = text;\n}\n\ndocument.getElementById("msg").addEventListener("input", updateCount);\nupdateCount();`,
+        checks: [
+          { label: "before typing", run: `return _t.text("#count");` },
+          { label: "type hello", run: `_t.type("#msg", "hello"); return _t.text("#count");` },
+          { label: "type 145 characters", run: `_t.type("#msg", "x".repeat(145)); return _t.text("#count");` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>JavaScript goes in <code>&lt;script&gt;</code> elements, in external <code>.js</code> files
+        (<code>&lt;script src&gt;</code>), and in handler attributes like <code>onclick</code> and <code>onload</code>.</li>
+        <li>Scripts run when the browser reaches them; code that touches the body must run after the body exists.</li>
+        <li><code>document.getElementById(id).value</code> reads an input — always a string; convert with <code>Number</code>.</li>
+        <li>Write results with <code>.value</code> (inputs) or <code>.textContent</code> (other elements).</li>
+        <li>Read inputs inside the handler, validate them, and keep the real work in pure functions.</li>
+        <li><code>addEventListener("click" | "input", fn)</code> attaches handlers from JavaScript — pass <code>fn</code>, don't call it.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

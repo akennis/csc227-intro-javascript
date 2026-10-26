@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>15 · Events — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 15 of 22</div>
+    <h1>15 · Events</h1>
+    <p class="lead">Respond to the user: listen for clicks, keys, and typing, find out which element was involved, and handle many elements at once.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-15">✏️ Practice this lesson → Lab 15 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Event-driven programs</h2>
+      <p>Most page code doesn't run top to bottom and finish — it sets up <strong>listeners</strong> and then waits. When
+      something happens (a click, a key press, typing, a page finishing loading), the browser creates an
+      <strong>event</strong> and calls every function listening for that kind of event on that element.</p>
+      <pre class="code">element.addEventListener("click", handlerFunction);</pre>
+      <p>The browser calls the handler with one argument: an <strong>event object</strong> describing what happened.</p>` },
+      { title: "A listener and the event object", html: `<button id="btn">Click me</button>`, code: `
+function onClick(e) {
+  console.log("type:", e.type);
+  console.log("target:", e.target.id, e.target.tagName);
+  console.log("position:", e.clientX, e.clientY);
+}
+
+document.getElementById("btn").addEventListener("click", onClick);
+console.log("listener attached; now click the button");
+` },
+
+      { md: `<h2>Event targets</h2>
+      <p>Every event you receive has a <strong>target</strong> element — the button that was clicked, the input that
+      changed, the image that finished loading. You can reach it two ways: <code>e.target</code> or <code>this</code>.
+      Prefer <code>e.target</code> wherever possible — <code>this</code> has complications (it's different in arrow functions,
+      for one).</p>
+      <p>The target is what lets <strong>one handler serve many elements</strong>. This is the original example: every
+      button on the page gets the same handler, and the handler disables whichever button was clicked.</p>` },
+      { title: "One handler, many buttons", html: `<button>Do it!</button>
+<button>Do more!</button>
+<button>Do even more!</button>`, code: `
+function buttonOnClickHandler(e) {
+  e.target.disabled = true;
+  console.log("disabled:", e.target.textContent);
+}
+
+function main() {
+  const buttons = document.querySelectorAll("button");
+  buttons.forEach(function (button) {
+    button.addEventListener("click", buttonOnClickHandler);
+  });
+}
+
+main();
+` },
+      { md: `<p><code>buttons.forEach(function (button) { … })</code> calls the function once per button — it's the same
+      <code>forEach</code> arrays have (lesson 9).</p>
+      <h2>Arrow functions as handlers</h2>
+      <p>Handlers are often written right where they're attached, as <strong>arrow functions</strong> (lambdas): drop the
+      <code>function</code> keyword and put <code>=&gt;</code> between the parameters and the body. Lesson 17 covers arrow
+      functions fully.</p>` },
+      { title: "Inline arrow handlers", html: `<button id="btn1">Click me</button>
+<button id="btn2">And me</button>`, code: `
+function main() {
+  document.getElementById("btn1").addEventListener("click", e => {
+    console.log(\`element with id = \${e.target.id} was clicked\`);
+  });
+  document.getElementById("btn2").addEventListener("click", (e) => console.log("btn2!", e.type));
+}
+main();
+` },
+
+      { md: `<h2>Kinds of events</h2>
+      <table>
+        <tr><th>Event</th><th>Fires when…</th><th>Useful on the event</th></tr>
+        <tr><td><code>click</code>, <code>dblclick</code></td><td>pressed and released / double-clicked</td><td><code>target</code></td></tr>
+        <tr><td><code>input</code></td><td>the value of an input/textarea changes, every keystroke</td><td><code>target.value</code></td></tr>
+        <tr><td><code>change</code></td><td>a value is committed: checkbox ticked, select chosen, text box left</td><td><code>target.value</code>, <code>target.checked</code></td></tr>
+        <tr><td><code>keydown</code>, <code>keyup</code></td><td>a key goes down / up</td><td><code>key</code> (e.g. <code>"Enter"</code>, <code>"a"</code>), <code>shiftKey</code></td></tr>
+        <tr><td><code>mouseover</code>, <code>mouseout</code></td><td>the pointer enters / leaves an element</td><td><code>target</code></td></tr>
+        <tr><td><code>focus</code>, <code>blur</code></td><td>an element gains / loses keyboard focus</td><td></td></tr>
+        <tr><td><code>submit</code></td><td>a form is submitted</td><td>call <code>e.preventDefault()</code> to stop the page reloading</td></tr>
+        <tr><td><code>load</code>, <code>DOMContentLoaded</code></td><td>the page (or an image) finished loading</td><td></td></tr>
+      </table>` },
+      { title: "Typing, choosing, keys", html: `<input id="name" placeholder="Type here">
+<select id="size"><option>small</option><option>medium</option><option>large</option></select>
+<p id="echo"></p>`, code: `
+const echo = document.getElementById("echo");
+
+document.getElementById("name").addEventListener("input", e => {
+  echo.textContent = "You typed: " + e.target.value;
+});
+
+document.getElementById("name").addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    console.log("Enter pressed with:", e.target.value);
+  }
+});
+
+document.getElementById("size").addEventListener("change", e => {
+  console.log("size is now", e.target.value);
+});
+` },
+      { title: "Hover", html: `<style>.tip { padding: .3rem .6rem; border: 1px solid #ccc; display: inline-block; margin: .2rem; }</style>
+<span class="tip" data-info="Hypertext Markup Language">HTML</span>
+<span class="tip" data-info="Cascading Style Sheets">CSS</span>
+<span class="tip" data-info="Document Object Model">DOM</span>
+<p id="info">Hover over a term.</p>`, code: `
+for (const el of document.querySelectorAll(".tip")) {
+  el.addEventListener("mouseover", e => {
+    document.getElementById("info").textContent = e.target.dataset.info;   // data-info attribute
+    e.target.style.background = "#eef4ff";
+  });
+  el.addEventListener("mouseout", e => {
+    e.target.style.background = "";
+  });
+}
+` },
+      { md: `<p><code>data-…</code> attributes hold your own data on an element; read them through <code>el.dataset</code>
+      (<code>data-info</code> → <code>dataset.info</code>, <code>data-user-id</code> → <code>dataset.userId</code>).</p>` },
+
+      { md: `<h2>Bubbling and delegation</h2>
+      <p>An event doesn't stop at its target: it <strong>bubbles</strong> up through every ancestor, so a listener on a parent
+      hears clicks on all its children. <code>e.target</code> is still the element actually clicked; <code>e.currentTarget</code>
+      is the element whose listener is running. <code>e.stopPropagation()</code> stops the bubbling.</p>` },
+      { title: "Bubbling", html: `<div id="outer" style="padding:1rem;background:#eef">outer
+  <div id="inner" style="padding:1rem;background:#ccf">inner
+    <button id="btn">button</button>
+  </div>
+</div>`, code: `
+for (const id of ["outer", "inner", "btn"]) {
+  document.getElementById(id).addEventListener("click", e => {
+    console.log("listener on", e.currentTarget.id, "— target was", e.target.id);
+  });
+}
+` },
+      { md: `<p>That gives a powerful pattern, <strong>event delegation</strong>: put <em>one</em> listener on a container
+      instead of one per child. It also works for children added <em>later</em>, which per-element listeners don't.
+      <code>e.target.closest(selector)</code> finds the child you care about even when the click lands on something inside it.</p>` },
+      { title: "Delegation", html: `<style>.done { text-decoration: line-through; color: #888; } li { cursor: pointer; }</style>
+<ul id="todo"><li>Buy milk</li><li>Walk the dog <em>(twice)</em></li></ul>
+<input id="new"> <button id="add">Add</button>`, code: `
+document.getElementById("todo").addEventListener("click", e => {
+  const li = e.target.closest("li");
+  if (li) {
+    li.classList.toggle("done");
+  }
+});
+
+document.getElementById("add").addEventListener("click", () => {
+  const li = document.createElement("li");
+  li.textContent = document.getElementById("new").value || "New task";
+  document.getElementById("todo").append(li);    // works with no new listener
+});
+` },
+
+      { md: `<h2>Removing listeners</h2>
+      <p><code>removeEventListener(type, fn)</code> detaches a handler — but you must pass <strong>the same function</strong>
+      you added, so give it a name. For "only once" there's a shortcut option: <code>{ once: true }</code>.</p>` },
+      { title: "Once only", html: `<button id="claim">Claim your prize</button>
+<button id="vote">Vote (3 times max)</button>`, code: `
+document.getElementById("claim").addEventListener("click", () => {
+  console.log("Prize claimed!");
+}, { once: true });
+
+let votes = 0;
+function onVote() {
+  votes++;
+  console.log("vote", votes);
+  if (votes === 3) {
+    document.getElementById("vote").removeEventListener("click", onVote);
+    document.getElementById("vote").textContent = "No more votes";
+  }
+}
+document.getElementById("vote").addEventListener("click", onVote);
+` },
+
+      { md: `<h2>Timers: events from the clock</h2>
+      <p><code>setTimeout(fn, ms)</code> calls <code>fn</code> once, after a delay; <code>setInterval(fn, ms)</code> calls it
+      repeatedly. Both return an id you can pass to <code>clearTimeout</code> / <code>clearInterval</code>. Unlike the busy
+      loop from lesson 6, they don't block: the page stays responsive while waiting.</p>` },
+      { title: "A stopwatch", html: `<p id="time" style="font-size:1.6rem;font-family:monospace">0.0 s</p>
+<button id="start">Start</button> <button id="stop">Stop</button> <button id="reset">Reset</button>`, code: `
+let tenths = 0;
+let timerId = null;
+
+function render() {
+  document.getElementById("time").textContent = (tenths / 10).toFixed(1) + " s";
+}
+
+document.getElementById("start").addEventListener("click", () => {
+  if (timerId === null) {
+    timerId = setInterval(() => { tenths++; render(); }, 100);
+  }
+});
+document.getElementById("stop").addEventListener("click", () => {
+  clearInterval(timerId);
+  timerId = null;
+});
+document.getElementById("reset").addEventListener("click", () => {
+  tenths = 0;
+  render();
+});
+setTimeout(() => console.log("this message waited one second"), 1000);
+` },
+
+      { md: `<div class="callout warn"><strong>Common mistakes.</strong>
+      <code>addEventListener("click", handler())</code> calls the handler immediately — pass <code>handler</code>.
+      Attaching listeners to elements that don't exist yet does nothing — use delegation.
+      Adding the same listener inside another handler stacks up duplicates on every click.
+      And the event name is <code>"click"</code>, not <code>"onclick"</code>.</div>` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Disable on click", prompt: `Give every <code>.once</code> button a click handler that disables the button that
+        was clicked and changes its text to <code>Done</code>. Use one handler function and <code>e.target</code>.`,
+        html: `<button class="once">First</button> <button class="once">Second</button> <button>Not me</button>`,
+        solution: `function finish(e) {\n  e.target.disabled = true;\n  e.target.textContent = "Done";\n}\n\nfor (const b of document.querySelectorAll(".once")) {\n  b.addEventListener("click", finish);\n}`,
+        checks: [{ label: "click the second button", run: `_t.$$("button")[1].click(); return _t.$$("button").map(b => [b.textContent, b.disabled]);` }] },
+      { title: "Vote counter", prompt: `Each <code>.vote</code> button shows its label followed by its vote count in
+        parentheses, starting at 0 — <code>Yes (0)</code>. Clicking it adds one: <code>Yes (1)</code>. Use the button's
+        <code>data-label</code> attribute for the label.`,
+        html: `<button class="vote" data-label="Yes"></button>
+<button class="vote" data-label="No"></button>
+<button class="vote" data-label="Maybe"></button>`,
+        solution: `for (const b of document.querySelectorAll(".vote")) {\n  let count = 0;\n  const render = () => { b.textContent = b.dataset.label + " (" + count + ")"; };\n  b.addEventListener("click", () => {\n    count++;\n    render();\n  });\n  render();\n}`,
+        checks: [
+          { label: "initial", run: `return _t.$$(".vote").map(b => b.textContent);` },
+          { label: "Yes ×2, Maybe ×1", run: `const [y, n, m] = _t.$$(".vote"); y.click(); y.click(); m.click(); return _t.$$(".vote").map(b => b.textContent);` },
+        ] },
+      { title: "Enter to add", prompt: `When the user presses <code>Enter</code> in <code>#entry</code>, append an
+        <code>&lt;li&gt;</code> with its trimmed text to <code>#log</code> and clear the input. Ignore empty entries and other keys.`,
+        html: `<input id="entry" placeholder="Type and press Enter">
+<ul id="log"></ul>`,
+        solution: `document.getElementById("entry").addEventListener("keydown", e => {\n  if (e.key !== "Enter") {\n    return;\n  }\n  const text = e.target.value.trim();\n  if (text === "") {\n    return;\n  }\n  const li = document.createElement("li");\n  li.textContent = text;\n  document.getElementById("log").append(li);\n  e.target.value = "";\n});`,
+        checks: [
+          { label: "type two entries", run: `const box = _t.el("#entry"); const press = (key) => box.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); box.value = " one "; press("Enter"); box.value = "two"; press("a"); press("Enter"); box.value = "  "; press("Enter"); return [_t.$$("#log li").map(li => li.textContent), box.value];` },
+        ] },
+      { title: "Delegated selection", prompt: `Add <strong>one</strong> click listener on <code>#menu</code>. Clicking an
+        <code>&lt;li&gt;</code> gives it the class <code>selected</code> and removes it from every other <code>&lt;li&gt;</code>,
+        and shows its text in <code>#choice</code>. It must also work for items added later.`,
+        html: `<ul id="menu"><li>Coffee</li><li>Tea</li><li>Juice</li></ul>
+<p>You chose: <span id="choice"></span></p>`,
+        solution: `document.getElementById("menu").addEventListener("click", e => {\n  const li = e.target.closest("li");\n  if (!li) {\n    return;\n  }\n  for (const other of document.querySelectorAll("#menu li")) {\n    other.classList.remove("selected");\n  }\n  li.classList.add("selected");\n  document.getElementById("choice").textContent = li.textContent;\n});`,
+        checks: [
+          { label: "click Tea", run: `_t.$$("#menu li")[1].click(); return [_t.el("#menu").innerHTML, _t.text("#choice")];` },
+          { label: "add Water, click it", run: `const li = document.createElement("li"); li.textContent = "Water"; _t.el("#menu").append(li); li.click(); return [_t.el("#menu").innerHTML, _t.text("#choice")];` },
+        ] },
+      { title: "Live filter", prompt: `As the user types in <code>#filter</code>, hide (<code>style.display = "none"</code>)
+        every <code>#names li</code> whose text doesn't contain the typed text (ignoring case), and show the rest
+        (<code>style.display = ""</code>). Put the number of visible items in <code>#shown</code>.`,
+        html: `<input id="filter" placeholder="Filter">
+<ul id="names"><li>Ada Lovelace</li><li>Alan Turing</li><li>Grace Hopper</li><li>Katherine Johnson</li></ul>
+<p><span id="shown">4</span> shown</p>`,
+        solution: `document.getElementById("filter").addEventListener("input", e => {\n  const q = e.target.value.toLowerCase();\n  let shown = 0;\n  for (const li of document.querySelectorAll("#names li")) {\n    const match = li.textContent.toLowerCase().includes(q);\n    li.style.display = match ? "" : "none";\n    if (match) {\n      shown++;\n    }\n  }\n  document.getElementById("shown").textContent = shown;\n});`,
+        checks: [
+          { label: 'type "an"', run: `_t.type("#filter", "an"); return [_t.$$("#names li").map(li => li.style.display), _t.text("#shown")];` },
+          { label: 'type "HOP"', run: `_t.type("#filter", "HOP"); return [_t.$$("#names li").map(li => li.style.display), _t.text("#shown")];` },
+          { label: "clear", run: `_t.type("#filter", ""); return _t.text("#shown");` },
+        ] },
+      { title: "Three strikes", prompt: `Clicking <code>#guess</code> counts a wrong guess and shows <code>Strikes: N</code>
+        in <code>#status</code>. After the third strike, show <code>Out!</code>, and remove the listener so further clicks
+        change nothing.`,
+        html: `<button id="guess">Guess</button> <span id="status">Strikes: 0</span>`,
+        solution: `let strikes = 0;\nfunction onGuess() {\n  strikes++;\n  const status = document.getElementById("status");\n  if (strikes >= 3) {\n    status.textContent = "Out!";\n    document.getElementById("guess").removeEventListener("click", onGuess);\n  } else {\n    status.textContent = "Strikes: " + strikes;\n  }\n}\ndocument.getElementById("guess").addEventListener("click", onGuess);`,
+        checks: [
+          { label: "two clicks", run: `_t.click("#guess"); _t.click("#guess"); return _t.text("#status");` },
+          { label: "five clicks total", run: `_t.click("#guess"); _t.click("#guess"); _t.click("#guess"); return [_t.text("#status"), strikes];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>el.addEventListener(type, handler)</code>; the handler receives an event object.</li>
+        <li><code>e.target</code> is the element involved — prefer it to <code>this</code>; one handler can serve many elements.</li>
+        <li>Common types: <code>click</code>, <code>input</code>, <code>change</code>, <code>keydown</code> (<code>e.key</code>), <code>mouseover</code>, <code>submit</code> (<code>preventDefault</code>).</li>
+        <li>Events bubble up; delegate with one listener on a container and <code>e.target.closest(…)</code>.</li>
+        <li><code>removeEventListener</code> needs the same function; <code>{ once: true }</code> for one-shot handlers.</li>
+        <li><code>setTimeout</code> / <code>setInterval</code> schedule work without blocking.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

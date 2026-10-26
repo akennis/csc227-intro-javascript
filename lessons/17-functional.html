@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>17 · Functions as Data, Recursion &amp; Arrows — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 17 of 22</div>
+    <h1>17 · Functions as Data, Recursion &amp; Arrow Functions</h1>
+    <p class="lead">Store and pass functions like any other value, solve problems by having a function call itself, and write functions more succinctly.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-17">✏️ Practice this lesson → Lab 17 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Functions are values</h2>
+      <p>In JavaScript a function is data, like a number or a string. It can be assigned to a variable, stored in an array
+      or an object, passed to another function, and returned from one. The parentheses are what <em>call</em> it:
+      <code>sayHello</code> is the function itself; <code>sayHello('Albert')</code> is the result of calling it.</p>` },
+      { title: "Assigning and storing functions", code: `
+const sayHello = function (name) { return \`Hello \${name}\`; };
+console.log(sayHello("Albert"));
+
+const greet = sayHello;              // the same function, a second name
+console.log(greet("Ada"), typeof greet);
+
+const add = function (a, b) { return a + b; };
+const mul = function (a, b) { return a * b; };
+
+const ops = [add, mul];              // in an array
+console.log(ops[1](3, 4));
+
+const calculator = { add, mul };     // in an object
+console.log(calculator.add(3, 4));
+` },
+      { md: `<h3>Passing functions: callbacks</h3>
+      <p>A function passed to another function is a <strong>callback</strong>. You've used them already —
+      <code>addEventListener</code>, <code>forEach</code>, <code>map</code>, <code>sort</code>. A function that takes or returns
+      functions is called a <strong>higher-order function</strong>. Writing your own is easy:</p>` },
+      { title: "Higher-order functions", code: `
+function applyTwice(f, x) {
+  return f(f(x));
+}
+
+function square(n) {
+  return n * n;
+}
+
+console.log(applyTwice(square, 3));           // square(square(3))
+
+function myMap(arr, f) {
+  const result = [];
+  for (const v of arr) {
+    result.push(f(v));
+  }
+  return result;
+}
+console.log(myMap([1, 2, 3], square));
+
+function compose(f, g) {
+  return function (x) {
+    return f(g(x));
+  };
+}
+const squareThenNegate = compose(n => -n, square);
+console.log(squareThenNegate(5));
+` },
+      { title: "A dispatch table", code: `
+const operations = {
+  "+": (a, b) => a + b,
+  "-": (a, b) => a - b,
+  "*": (a, b) => a * b,
+  "/": (a, b) => a / b,
+};
+
+function calculate(a, op, b) {
+  const f = operations[op];
+  if (!f) {
+    throw new Error("unknown operator " + op);
+  }
+  return f(a, b);
+}
+
+console.log(calculate(6, "*", 7), calculate(10, "/", 4), calculate(1, "-", 3));
+` },
+      { md: `<p>Looking up a function in an object replaces a long <code>if/else if</code> chain — and adding an operator is
+      just adding an entry.</p>` },
+
+      { md: `<h2>Recursion</h2>
+      <p>A <strong>recursive</strong> function calls itself. Recursive functions solve a problem one step at a time,
+      <strong>reducing the size of the problem</strong> with each call, until it's so small the answer is obvious. Every
+      recursive function needs:</p>
+      <ul>
+        <li>a <strong>base case</strong> that stops the recursion when the problem has been completely reduced (made
+        trivial), and</li>
+        <li>a <strong>recursive case</strong> that calls itself on a <em>smaller</em> problem and uses the answer.</li>
+      </ul>` },
+      { title: "Factorial and countdown", code: `
+function factorial(n) {
+  if (n <= 1) {              // base case
+    return 1;
+  }
+  return n * factorial(n - 1);   // recursive case: a smaller problem
+}
+console.log(factorial(5));    // 5 * 4 * 3 * 2 * 1
+
+function countdown(n) {
+  if (n === 0) {
+    console.log("Liftoff!");
+    return;
+  }
+  console.log(n);
+  countdown(n - 1);
+}
+countdown(3);
+` },
+      { md: `<p>Trace <code>factorial(3)</code>: it needs <code>3 * factorial(2)</code>, which needs
+      <code>2 * factorial(1)</code>, which is the base case <code>1</code>. Then the answers come back up:
+      <code>2 * 1 = 2</code>, <code>3 * 2 = 6</code>. Each pending call waits on the <strong>call stack</strong> — the same stack
+      the debugger shows.</p>` },
+      { title: "Recursion on arrays and strings", code: `
+function sum(arr) {
+  if (arr.length === 0) {
+    return 0;
+  }
+  return arr[0] + sum(arr.slice(1));      // first + sum of the rest
+}
+
+function reverse(s) {
+  if (s.length <= 1) {
+    return s;
+  }
+  return reverse(s.slice(1)) + s[0];
+}
+
+function isPalindrome(s) {
+  if (s.length <= 1) {
+    return true;
+  }
+  return s[0] === s.at(-1) && isPalindrome(s.slice(1, -1));
+}
+
+console.log(sum([1, 2, 3, 4]));
+console.log(reverse("recursion"));
+console.log(isPalindrome("racecar"), isPalindrome("rocket"));
+` },
+      { md: `<p>Recursion is most natural for data that's nested to an unknown depth — arrays inside arrays, folders inside
+      folders, elements inside elements. A loop can't easily say "and then do the same for everything inside"; recursion
+      can.</p>` },
+      { title: "Nested data", code: `
+function deepSum(value) {
+  if (!Array.isArray(value)) {
+    return value;                       // base case: a plain number
+  }
+  let total = 0;
+  for (const item of value) {
+    total += deepSum(item);             // each item may itself be nested
+  }
+  return total;
+}
+console.log(deepSum([1, [2, 3], [[4], [5, [6]]]]));
+
+const folder = {
+  name: "home", files: ["notes.txt"],
+  folders: [
+    { name: "photos", files: ["a.jpg", "b.jpg"], folders: [] },
+    { name: "code", files: ["app.js"], folders: [{ name: "old", files: ["v1.js"], folders: [] }] },
+  ],
+};
+function countFiles(f) {
+  let n = f.files.length;
+  for (const sub of f.folders) {
+    n += countFiles(sub);
+  }
+  return n;
+}
+console.log("files:", countFiles(folder));
+` },
+      { md: `<div class="callout warn"><strong>No base case, no end.</strong> If the base case is missing, or the recursive call
+      doesn't make the problem smaller, the function calls itself until the call stack runs out: <em>RangeError: Maximum call
+      stack size exceeded</em>.</div>` },
+      { title: "A missing base case", expectError: true, code: `
+function sumTo(n) {
+  return n + sumTo(n - 1);    // never stops: no base case
+}
+console.log(sumTo(5));
+` },
+
+      { md: `<h2>Example: evaluating an equation</h2>
+      <p>This evaluator takes an array of operands and an array of operation <em>functions</em>, applies the first operation to
+      the first two operands, replaces them with the result, and recurses on the shorter problem. With
+      <code>[add, mul, add]</code> and <code>[1, 2, 3, 4]</code> it computes, strictly left to right:</p>
+      <pre class="code" data-lang="text">1 + 2 * 3 + 4
+3 * 3 + 4
+9 + 4
+13</pre>
+      <p>(In class this was called <code>eval</code>. That name belongs to a built-in JavaScript function, and redefining it
+      is an error in strict code, so here it's <code>evaluate</code>.)</p>` },
+      { title: "Recursive evaluator", code: `
+const add = function (a, b) { return a + b; };
+const mul = function (a, b) { return a * b; };
+
+const evaluate = function (operands, eq) {
+  if (eq.length === 0) {
+    return operands[0];
+  }
+  const nextOperation = eq[0];
+  const nextRes = nextOperation(operands[0], operands[1]);
+  const eqCopy = [...eq];
+  eqCopy.shift();
+  const operandsCopy = [...operands];
+  operandsCopy.shift();
+  operandsCopy.shift();
+  operandsCopy.unshift(nextRes);
+  console.log(operandsCopy.join(", "));
+  return evaluate(operandsCopy, eqCopy);
+};
+
+const eq = [add, mul, add];
+const operands = [1, 2, 3, 4];
+console.log("result:", evaluate(operands, eq));
+` },
+      { md: `<p>Notice <code>[...eq]</code>: the function copies its inputs before changing them, so the caller's arrays are
+      untouched — it stays a pure function even though it uses <code>shift</code> internally.</p>` },
+
+      { md: `<h2>Arrow functions</h2>
+      <p>Arrow syntax (lambda syntax) defines functions more succinctly. The basic recipe: remove the <code>function</code>
+      keyword from a normal function definition, and put <code>=&gt;</code> between the remaining <code>(args…)</code> and
+      <code>{body…}</code>.</p>
+      <pre class="code">const add = function (a, b) { return a + b; };
+const add = (a, b) => { return a + b; };</pre>
+      <p>Then two shortcuts: when the body is a single expression, drop the braces and the <code>return</code>
+      (<strong>implicit return</strong>); and with exactly one parameter, the parentheses are optional.</p>` },
+      { title: "Arrow forms", code: `
+const sayHello = name => { return \`Hello \${name}\`; };
+const add = (a, b) => { return a + b; };
+const mul = (a, b) => a * b;               // implicit return
+const square = x => x * x;                 // one parameter, no parentheses
+const random = () => Math.random();        // no parameters: empty ()
+const point = (x, y) => ({ x, y });        // returning an object: wrap it in ( )
+
+console.log(sayHello("Albert"), add(2, 3), mul(2, 3), square(9));
+console.log(typeof random(), point(1, 2));
+` },
+      { title: "The evaluator with arrows", code: `
+const add = (a, b) => a + b;
+const mul = (a, b) => a * b;
+
+const evaluate = (operands, eq) => {
+  if (eq.length === 0) {
+    return operands[0];
+  }
+  const [op, ...restOps] = eq;
+  const [a, b, ...restNums] = operands;
+  return evaluate([op(a, b), ...restNums], restOps);
+};
+
+console.log(evaluate([1, 2, 3, 4], [add, mul, add]));
+console.log(evaluate([2, 3, 4], [mul, mul]));
+` },
+      { md: `<p>Arrows are especially common as callbacks and event handlers:</p>` },
+      { title: "Arrows as callbacks", html: `<button id="btn1">Click me</button>`, code: `
+document.getElementById("btn1").addEventListener("click", e => {
+  console.log(\`element with id = \${e.target.id} was clicked\`);
+});
+
+const words = ["kiwi", "fig", "banana", "apple"];
+console.log(words.filter(w => w.length > 3).map(w => w.toUpperCase()));
+console.log([...words].sort((a, b) => a.length - b.length));
+` },
+      { md: `<div class="callout warn"><strong>Arrows and <code>this</code>.</strong> Arrow functions don't get their own
+      <code>this</code>; they use the surrounding one. That makes them great for callbacks, but don't use an arrow as an object
+      method that relies on <code>this</code>. (Closure-style objects from lesson 12 don't use <code>this</code> at all, so arrows
+      work fine there.)</div>` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Apply n times", prompt: `Write <code>applyN(f, n, x)</code>, which applies the function <code>f</code> to
+        <code>x</code> exactly <code>n</code> times. <code>applyN(x =&gt; x * 2, 3, 1)</code> is 8.`,
+        solution: `function applyN(f, n, x) {\n  let result = x;\n  for (let i = 0; i < n; i++) {\n    result = f(result);\n  }\n  return result;\n}`,
+        checks: [{ expr: "applyN(x => x * 2, 3, 1)" }, { expr: `applyN(s => s + "!", 2, "hi")` }, { expr: "applyN(x => x + 1, 0, 5)" }] },
+      { title: "Your own filter", prompt: `Write <code>myFilter(arr, test)</code> returning a new array of the elements for
+        which <code>test(element)</code> is truthy — without using the built-in <code>filter</code>.`,
+        solution: `function myFilter(arr, test) {\n  const result = [];\n  for (const v of arr) {\n    if (test(v)) {\n      result.push(v);\n    }\n  }\n  return result;\n}`,
+        checks: [{ expr: "myFilter([1, 2, 3, 4, 5], n => n % 2 === 1)" }, { expr: `myFilter(["a", "", "b"], s => s)` }, { expr: "myFilter([], x => true)" }] },
+      { title: "Operator table", prompt: `Complete <code>ops</code>, an object mapping <code>"+"</code>, <code>"-"</code>,
+        <code>"*"</code>, <code>"/"</code> and <code>"**"</code> to arrow functions, and write <code>calc(a, op, b)</code> that
+        uses it. An unknown operator returns <code>NaN</code>.`,
+        starter: `const ops = {\n  "+": (a, b) => a + b,\n};\n\nfunction calc(a, op, b) {\n\n}`,
+        solution: `const ops = {\n  "+": (a, b) => a + b,\n  "-": (a, b) => a - b,\n  "*": (a, b) => a * b,\n  "/": (a, b) => a / b,\n  "**": (a, b) => a ** b,\n};\n\nfunction calc(a, op, b) {\n  const f = ops[op];\n  return f ? f(a, b) : NaN;\n}`,
+        checks: [{ expr: `calc(2, "+", 3)` }, { expr: `calc(2, "-", 3)` }, { expr: `calc(2, "*", 3)` }, { expr: `calc(3, "/", 2)` }, { expr: `calc(2, "**", 10)` }, { expr: `calc(1, "%", 1)` }] },
+      { title: "Recursive power", prompt: `Write <code>power(base, exp)</code> recursively (no loops, no <code>**</code>), for
+        whole numbers <code>exp &gt;= 0</code>. Base case: anything to the power 0 is 1.`,
+        solution: `function power(base, exp) {\n  if (exp === 0) {\n    return 1;\n  }\n  return base * power(base, exp - 1);\n}`,
+        checks: [{ expr: "power(2, 10)" }, { expr: "power(5, 0)" }, { expr: "power(3, 3)" }] },
+      { title: "Recursive digit sum", prompt: `Write <code>digitSum(n)</code> recursively: the sum of the digits of a whole
+        number <code>n &gt;= 0</code>. <code>digitSum(1234)</code> is 10.`,
+        hint: `The last digit is <code>n % 10</code>; the rest of the number is <code>Math.floor(n / 10)</code>. Stop when n is a single digit.`,
+        solution: `function digitSum(n) {\n  if (n < 10) {\n    return n;\n  }\n  return n % 10 + digitSum(Math.floor(n / 10));\n}`,
+        checks: [{ expr: "digitSum(1234)" }, { expr: "digitSum(7)" }, { expr: "digitSum(99999)" }] },
+      { title: "Flatten, recursively", prompt: `Write <code>flattenDeep(arr)</code> that returns a flat array of every
+        non-array value, however deeply nested, in order. <code>flattenDeep([1, [2, [3, [4]]], 5])</code> is
+        <code>[1, 2, 3, 4, 5]</code>. Don't use the built-in <code>flat</code>.`,
+        solution: `function flattenDeep(arr) {\n  const result = [];\n  for (const item of arr) {\n    if (Array.isArray(item)) {\n      result.push(...flattenDeep(item));\n    } else {\n      result.push(item);\n    }\n  }\n  return result;\n}`,
+        checks: [{ expr: "flattenDeep([1, [2, [3, [4]]], 5])" }, { expr: "flattenDeep([])" }, { expr: "flattenDeep([[[]], [[1]]])" }] },
+      { title: "Arrow rewrite", prompt: `Rewrite these three as arrow functions with implicit returns (one line each), keeping
+        the names: <code>double</code>, <code>isLong</code> (more than 5 characters), and <code>fullName</code>
+        (returns <code>"First Last"</code>).`,
+        starter: `const double = function (x) {\n  return x * 2;\n};\n\nconst isLong = function (s) {\n  return s.length > 5;\n};\n\nconst fullName = function (first, last) {\n  return first + " " + last;\n};`,
+        solution: `const double = x => x * 2;\nconst isLong = s => s.length > 5;\nconst fullName = (first, last) => first + " " + last;`,
+        checks: [{ expr: "double(21)" }, { expr: `isLong("banana")` }, { expr: `isLong("fig")` }, { expr: `fullName("Ada", "Lovelace")` },
+          { label: "they are arrow functions", run: `return [double, isLong, fullName].map(f => !f.hasOwnProperty("prototype"));` }] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Functions are values: assign them, store them in arrays and objects, pass them (callbacks), return them.</li>
+        <li>Higher-order functions take or return functions: <code>map</code>, <code>filter</code>, <code>compose</code>, dispatch tables.</li>
+        <li>Recursion: a base case that stops, and a recursive case on a smaller problem. Natural for nested data.</li>
+        <li>No base case → "Maximum call stack size exceeded".</li>
+        <li>Arrows: <code>(a, b) =&gt; a + b</code>; one parameter needs no parentheses; wrap returned object literals in <code>( )</code>.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

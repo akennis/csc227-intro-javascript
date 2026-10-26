@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>13 · The DOM I — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 13 of 22</div>
+    <h1>13 · The DOM I: From HTML to a Live Document</h1>
+    <p class="lead">What the browser builds from your HTML, how JavaScript sees it, and how to find, read, and change what's on the page.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-13">✏️ Practice this lesson → Lab 13 (4 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Three languages, one page</h2>
+      <p>A web page is built from three languages, each with one job:</p>
+      <table>
+        <tr><th>Language</th><th>Job</th><th>Example</th></tr>
+        <tr><td><strong>HTML</strong></td><td>structure and content — what's on the page</td><td><code>&lt;button id="buy"&gt;Buy&lt;/button&gt;</code></td></tr>
+        <tr><td><strong>CSS</strong></td><td>presentation — how it looks</td><td><code>#buy { color: white; background: green; }</code></td></tr>
+        <tr><td><strong>JavaScript</strong></td><td>behaviour — what it does</td><td><code>buy.addEventListener("click", …)</code></td></tr>
+      </table>
+      <p>But JavaScript never works on your HTML <em>text</em>. It works on something the browser builds from that text: the
+      <strong>Document Object Model</strong>, or <strong>DOM</strong>. Understanding the DOM — what it is, where it comes from,
+      and how the browser keeps it on screen — is the key to every interactive web page.</p>
+      <p>Reading: <a href="https://www.w3schools.com/js/js_htmldom.asp">W3Schools DOM tutorial</a> (introductory) and the
+      <a href="https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model">MDN DOM reference</a> (authoritative).</p>` },
+
+      { md: `<h2>From HTML text to pixels</h2>
+      <p>When you open a page, the browser goes through a pipeline:</p>
+      <ol>
+        <li><strong>Download</strong> the HTML (it's just text).</li>
+        <li><strong>Parse</strong> it, top to bottom, into a tree of objects in memory — the <strong>DOM</strong>. Each tag becomes an
+        <em>element</em> object; the text between tags becomes <em>text</em> objects.</li>
+        <li>Parse the CSS into style rules, and work out which rules apply to each element.</li>
+        <li><strong>Layout</strong>: compute the size and position of every visible element.</li>
+        <li><strong>Paint</strong>: draw the result as pixels on the screen.</li>
+      </ol>
+      <p>Whenever JavaScript changes the DOM, the browser re-does the affected layout and painting — automatically. You never
+      draw anything yourself: <strong>you change the DOM, and the browser updates the screen</strong>. That's the whole contract.</p>
+      <p>Here's a small page, and the tree the browser builds from it:</p>
+      <pre class="code" data-lang="html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+  &lt;head&gt;&lt;title&gt;Menu&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Menu&lt;/h1&gt;
+    &lt;ul id="items"&gt;
+      &lt;li&gt;Coffee&lt;/li&gt;
+      &lt;li&gt;Tea&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</pre>
+      <pre class="code" data-lang="text">document
+└── html
+    ├── head
+    │   └── title ── "Menu"
+    └── body
+        ├── h1 ── "Menu"
+        └── ul#items
+            ├── li ── "Coffee"
+            └── li ── "Tea"</pre>
+      <p>Family words describe the tree: <code>ul</code> is the <strong>parent</strong> of the two <code>li</code>s, they are its
+      <strong>children</strong>, and they are each other's <strong>siblings</strong>. <code>body</code> is an <strong>ancestor</strong>
+      of every <code>li</code>; each <code>li</code> is a <strong>descendant</strong> of <code>body</code>. At the very top sits the
+      <code>document</code> object itself.</p>` },
+
+      { md: `<h2>The DOM is not your HTML</h2>
+      <p>The source file and the DOM start out alike, but they're different things. The browser <strong>repairs</strong> invalid
+      HTML as it parses — and from then on, the DOM can change while the source never does. "View Source" shows the original
+      text; DevTools' <strong>Elements</strong> panel (<kbd>F12</kbd>) shows the <em>live</em> DOM. Watch the browser fix this
+      sloppy markup:</p>` },
+      { title: "The browser repairs HTML", html: `<div id="box">
+<table id="t"><tr><td>1</td></tr></table>
+<p>one<p>two
+<ul><li>a<li>b</ul>
+</div>`, code: `
+const box = document.getElementById("box");
+
+// We never wrote <tbody>, but the browser inserted one.
+console.log(document.getElementById("t").innerHTML);
+
+// <p>one<p>two — a <p> can't contain a <p>, so the browser closed the first one.
+console.log("paragraphs:", box.querySelectorAll("p").length);
+
+// Unclosed <li>s were closed too.
+console.log(box.querySelector("ul").innerHTML);
+` },
+      { md: `<p>Lesson: when your JavaScript can't find an element you're sure is there, check the <em>DOM</em> in the Elements
+      panel, not your source file.</p>` },
+
+      { md: `<h2>Nodes: elements, text, comments</h2>
+      <p>Everything in the tree is a <strong>node</strong>. The kinds you'll meet:</p>
+      <table>
+        <tr><th>Node type</th><th><code>nodeType</code></th><th><code>nodeName</code></th><th>Made from</th></tr>
+        <tr><td>element</td><td>1</td><td><code>"DIV"</code>, <code>"P"</code>, …</td><td>tags</td></tr>
+        <tr><td>text</td><td>3</td><td><code>"#text"</code></td><td>text between tags — <em>including whitespace and line breaks</em></td></tr>
+        <tr><td>comment</td><td>8</td><td><code>"#comment"</code></td><td><code>&lt;!-- … --&gt;</code></td></tr>
+        <tr><td>document</td><td>9</td><td><code>"#document"</code></td><td>the whole page</td></tr>
+      </table>` },
+      { title: "What's really inside an element", html: `<div id="box">
+  <h2>Title</h2>
+  <!-- a comment -->
+  <p>Some <b>bold</b> text.</p>
+</div>`, code: `
+const box = document.getElementById("box");
+
+for (const node of box.childNodes) {
+  console.log(node.nodeType, node.nodeName.padEnd(9), JSON.stringify(node.textContent));
+}
+console.log("childNodes:", box.childNodes.length, "  children (elements only):", box.children.length);
+` },
+      { md: `<p>Those <code>"#text"</code> nodes containing only <code>"\\n  "</code> are the line breaks and indentation between tags.
+      They're real nodes. That's why, for navigating, you'll usually want the <em>element-only</em> versions
+      (<code>children</code> rather than <code>childNodes</code>) — more in DOM II.</p>` },
+
+      { md: `<h2>window and document</h2>
+      <p>Browser JavaScript starts with two objects:</p>
+      <ul>
+        <li><code>window</code> — the browser tab. It's the <strong>global object</strong>: <code>alert</code>,
+        <code>setTimeout</code>, <code>console</code>, <code>localStorage</code> and every global variable you declare with
+        <code>function</code> are properties of it. <code>window.innerWidth</code> is the viewport width.</li>
+        <li><code>document</code> (really <code>window.document</code>) — the root of the DOM, and the starting point for finding
+        anything on the page.</li>
+      </ul>` },
+      { title: "Exploring the document", html: `<h1>Hello</h1>
+<form name="signup"><input name="email"></form>
+<a href="https://developer.mozilla.org">MDN</a>`, code: `
+console.log(document.nodeName);                  // the root node
+console.log(document.documentElement.tagName);   // <html>
+console.log(document.head.tagName, document.body.tagName);
+
+console.log("title before:", JSON.stringify(document.title));
+document.title = "Changed by JavaScript";        // the tab's title
+console.log("title after:", document.title);
+
+console.log("forms:", document.forms.length, "→", document.forms[0].name);
+console.log("links:", document.links.length, "→", document.links[0].href);
+console.log("viewport:", window.innerWidth, "px wide");
+console.log(window.document === document, typeof window.setTimeout);
+` },
+
+      { md: `<h2>When does the DOM exist?</h2>
+      <p>The browser parses from top to bottom and runs each <code>&lt;script&gt;</code> <strong>the moment it reaches it</strong> —
+      pausing the parse until the script finishes. So a script can only see elements <em>above</em> it. Two events tell you
+      when the rest is ready:</p>
+      <ul>
+        <li><code>DOMContentLoaded</code> on <code>document</code> — the whole HTML has been parsed; the DOM is complete.</li>
+        <li><code>load</code> on <code>window</code> — everything, including images and stylesheets, has finished loading.</li>
+      </ul>
+      <p><code>document.readyState</code> goes <code>"loading"</code> → <code>"interactive"</code> → <code>"complete"</code>. In this
+      example, a script inside the page's HTML runs <em>before</em> the paragraph exists; your code (placed at the end of the
+      body, as always in these examples) runs after:</p>` },
+      { title: "Scripts run as the page is parsed", html: `<script>
+  console.log("inline script:", document.getElementById("late"), "| readyState:", document.readyState);
+<\/script>
+<p id="late">I'm below the inline script.</p>`, code: `
+console.log("our script:", document.getElementById("late").textContent, "| readyState:", document.readyState);
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOMContentLoaded | readyState:", document.readyState);
+});
+window.addEventListener("load", () => {
+  console.log("load | readyState:", document.readyState);
+});
+` },
+      { md: `<div class="callout tip"><strong>Where to put your script.</strong> Either at the end of <code>&lt;body&gt;</code>; or in
+      <code>&lt;head&gt;</code> with <code>defer</code> — <code>&lt;script src="app.js" defer&gt;&lt;/script&gt;</code> — which downloads
+      it in parallel and runs it after parsing, just before <code>DOMContentLoaded</code>; or wrap your start-up code in a
+      <code>DOMContentLoaded</code> listener. Since a script blocks parsing while it runs, a slow script at the top makes the whole
+      page appear slowly.</div>` },
+
+      { md: `<h2>Elements are objects</h2>
+      <p>Each element in the DOM is a full JavaScript object with properties and methods. Its type depends on its tag: an
+      <code>&lt;input&gt;</code> is an <code>HTMLInputElement</code>, with <code>value</code> and <code>checked</code>; an
+      <code>&lt;a&gt;</code> is an <code>HTMLAnchorElement</code>, with <code>href</code>. These types are built in layers, each adding
+      features — which is why every element shares methods like <code>querySelector</code> and <code>remove</code>.</p>` },
+      { title: "An element's family tree of types", html: `<input id="name" value="Ada"> <a id="link" href="#">link</a>`, code: `
+function typeChain(obj) {
+  const names = [];
+  let proto = Object.getPrototypeOf(obj);
+  while (proto !== null) {
+    names.push(proto.constructor.name);
+    proto = Object.getPrototypeOf(proto);
+  }
+  return names.join(" → ");
+}
+
+const input = document.getElementById("name");
+console.log(typeChain(input));
+console.log(typeChain(document.getElementById("link")));
+console.log(typeof input.value, typeof input.focus, typeof input.querySelector);
+console.log(input.tagName, input.id, input.type);
+` },
+      { md: `<p>Read the chain from left to right: <code>HTMLInputElement</code> adds form features, <code>HTMLElement</code> adds
+      HTML features like <code>style</code> and <code>hidden</code>, <code>Element</code> adds attributes and
+      <code>querySelector</code>, <code>Node</code> adds tree navigation, and <code>EventTarget</code> adds
+      <code>addEventListener</code>. In the DevTools console, <code>console.dir(element)</code> lists them all.</p>` },
+
+      { md: `<h2>Finding elements</h2>
+      <table>
+        <tr><th>Method</th><th>Returns</th></tr>
+        <tr><td><code>document.getElementById("id")</code></td><td>the element with that id, or <code>null</code></td></tr>
+        <tr><td><code>document.querySelector("selector")</code></td><td>the <em>first</em> match, or <code>null</code></td></tr>
+        <tr><td><code>document.querySelectorAll("selector")</code></td><td>all matches: a static <code>NodeList</code></td></tr>
+        <tr><td><code>document.getElementsByClassName("c")</code>, <code>getElementsByTagName("p")</code></td><td>all matches: a <em>live</em> <code>HTMLCollection</code></td></tr>
+        <tr><td><code>element.querySelector(…)</code>, <code>element.querySelectorAll(…)</code></td><td>search only <em>inside</em> that element</td></tr>
+        <tr><td><code>element.matches("selector")</code></td><td><code>true</code> if the element itself matches</td></tr>
+      </table>
+      <p>Selectors are the same ones CSS uses:</p>
+      <table>
+        <tr><th>Selector</th><th>Matches</th></tr>
+        <tr><td><code>p</code> · <code>.note</code> · <code>#main</code></td><td>tag · class · id</td></tr>
+        <tr><td><code>p.note</code> · <code>li.hot.big</code></td><td>both at once (no space)</td></tr>
+        <tr><td><code>ul li</code> · <code>ul &gt; li</code></td><td>descendant anywhere inside · direct child only</td></tr>
+        <tr><td><code>h2 + p</code> · <code>h2 ~ p</code></td><td>the next sibling · any later sibling</td></tr>
+        <tr><td><code>input[type=checkbox]</code> · <code>[data-price]</code></td><td>attribute equals · attribute present</td></tr>
+        <tr><td><code>li:first-child</code> · <code>li:nth-child(2)</code> · <code>li:not(.hot)</code> · <code>input:checked</code></td><td>pseudo-classes</td></tr>
+        <tr><td><code>h1, h2, h3</code></td><td>any of these</td></tr>
+      </table>` },
+      { title: "Querying", html: `<h1 id="title">Menu</h1>
+<ul id="items">
+  <li class="hot">Coffee</li>
+  <li>Juice</li>
+  <li class="hot big">Tea</li>
+  <li><input type="checkbox" checked> Water</li>
+</ul>
+<h2>Notes</h2>
+<p class="note">Prices include tax.</p>
+<p>Open daily.</p>`, code: `
+console.log(document.getElementById("title").textContent);
+console.log(document.querySelector("li").textContent);          // the first li
+
+const hot = document.querySelectorAll("li.hot");
+console.log("hot drinks:", hot.length);
+hot.forEach(li => console.log(" -", li.textContent));
+
+console.log([...document.querySelectorAll("#items > li:not(.hot)")].map(li => li.textContent.trim()));
+console.log(document.querySelector("h2 + p").textContent);       // the paragraph right after <h2>
+console.log(document.querySelectorAll("input:checked").length, "checked box(es)");
+console.log(document.querySelector("li.hot.big").textContent);
+
+const list = document.getElementById("items");
+console.log(list.querySelectorAll("li").length, "li inside #items");
+console.log(document.querySelector("#title").matches("h1#title"));
+console.log(document.querySelector(".missing"));                 // null — always check before using
+` },
+      { md: `<h3>Static and live collections</h3>
+      <p><code>querySelectorAll</code> takes a <strong>snapshot</strong>: later changes don't affect it.
+      <code>getElementsByClassName</code> and <code>getElementsByTagName</code> return a <strong>live</strong> collection that
+      updates itself as the page changes. Neither is a real array — spread with <code>[...collection]</code> to use
+      <code>map</code> and <code>filter</code>.</p>` },
+      { title: "Snapshot versus live", html: `<ul id="list"><li class="item">A</li><li class="item">B</li></ul>`, code: `
+const snapshot = document.querySelectorAll(".item");
+const live = document.getElementsByClassName("item");
+console.log("before:", snapshot.length, live.length);
+
+const li = document.createElement("li");
+li.className = "item";
+li.textContent = "C";
+document.getElementById("list").append(li);
+
+console.log("after adding one:", snapshot.length, live.length);
+console.log(Array.isArray(snapshot), Array.isArray([...snapshot]));
+` },
+
+      { md: `<h2>Reading and changing content</h2>
+      <table>
+        <tr><th>Property</th><th>Gives / sets</th></tr>
+        <tr><td><code>el.textContent</code></td><td>all the text inside, including hidden text. Setting it replaces the contents with
+        plain text — <strong>never</strong> interpreted as HTML.</td></tr>
+        <tr><td><code>el.innerText</code></td><td>the text as <em>rendered</em> — respects CSS, so hidden text is left out (and it's slower,
+        because it needs layout).</td></tr>
+        <tr><td><code>el.innerHTML</code></td><td>the HTML inside, as a string. Setting it <em>parses</em> the string and builds new elements.</td></tr>
+        <tr><td><code>el.outerHTML</code></td><td>the element itself plus its contents, as HTML.</td></tr>
+      </table>` },
+      { title: "Four views of the same element", html: `<style>.secret { display: none; }</style>
+<p id="msg">Hello <b>world</b><span class="secret"> (hidden)</span></p>`, code: `
+const msg = document.getElementById("msg");
+console.log("textContent:", JSON.stringify(msg.textContent));
+console.log("innerHTML:  ", msg.innerHTML);
+console.log("outerHTML:  ", msg.outerHTML);
+
+// innerText depends on layout (what's actually shown), and while the page is
+// still being parsed there is no layout yet — so ask once the page has loaded.
+window.addEventListener("load", () => {
+  console.log("innerText:  ", JSON.stringify(msg.innerText), "← the hidden span is left out");
+});
+` },
+      { title: "Changing content", html: `<h2 id="heading">Shopping</h2>
+<div id="card"></div>`, code: `
+document.getElementById("heading").textContent = "Shopping (3 items)";
+
+const product = { name: "Notebook", price: 3.49, tags: ["paper", "school"] };
+document.getElementById("card").innerHTML = \`
+  <h3>\${product.name}</h3>
+  <p>Price: <strong>$\${product.price.toFixed(2)}</strong></p>
+  <p>Tags: \${product.tags.map(t => "<em>" + t + "</em>").join(", ")}</p>
+\`;
+console.log(document.getElementById("card").children.length, "elements built from one string");
+` },
+      { md: `<div class="callout warn"><strong>Never put user input into <code>innerHTML</code>.</strong> If a user types
+      <code>&lt;img src=x onerror="…"&gt;</code> and you insert it with <code>innerHTML</code>, the browser builds that element and
+      runs its code — a <em>cross-site scripting</em> (XSS) attack that can steal anything on the page. Use
+      <code>textContent</code> for anything that came from a user or from another site.</div>` },
+      { title: "textContent is safe", html: `<input id="msg" size="44" value="&lt;img src=x onerror=&quot;console.log('attacker code ran!')&quot;&gt;">
+<button onclick="show()">Show</button>
+<p>innerHTML: <span id="a"></span></p>
+<p>textContent: <span id="b"></span></p>`, code: `
+function show() {
+  const text = document.getElementById("msg").value;
+  document.getElementById("b").textContent = text;   // shown literally
+  document.getElementById("a").innerHTML = text;     // parsed — and the onerror code runs
+}
+show();
+` },
+
+      { md: `<h2>Attributes and properties</h2>
+      <p>An HTML <strong>attribute</strong> is what's written in the tag: <code>&lt;input value="Ada"&gt;</code>. A DOM
+      <strong>property</strong> is a field on the element object: <code>input.value</code>. The browser initialises properties
+      from attributes, and for most (<code>id</code>, <code>className</code>, <code>src</code>) the two stay in sync. But some
+      properties hold the <em>current state</em>, and the attribute only remembers the <em>starting</em> state:</p>
+      <ul>
+        <li><code>input.value</code> is what's in the box now; <code>getAttribute("value")</code> (and <code>defaultValue</code>) is what
+        the HTML said.</li>
+        <li><code>checkbox.checked</code> is whether it's ticked now; the <code>checked</code> attribute is whether it started ticked.</li>
+        <li><code>link.href</code> is the full, resolved URL; <code>getAttribute("href")</code> is exactly what was written.</li>
+      </ul>
+      <p>Use <code>getAttribute</code>, <code>setAttribute</code>, <code>hasAttribute</code> and <code>removeAttribute</code> for any
+      attribute, including ones the DOM has no property for.</p>` },
+      { title: "Attribute versus property", html: `<input id="name" value="Ada">
+<input id="agree" type="checkbox" checked>
+<a id="link" href="docs/start.html">docs</a>
+<button id="b" disabled>Can't click</button>`, code: `
+const name = document.getElementById("name");
+name.value = "Grace";                        // like the user typing
+console.log("property:", name.value, "| attribute:", name.getAttribute("value"), "| defaultValue:", name.defaultValue);
+
+const agree = document.getElementById("agree");
+agree.checked = false;
+console.log("checked property:", agree.checked, "| has checked attribute:", agree.hasAttribute("checked"));
+
+const link = document.getElementById("link");
+console.log("href property: ", link.href);
+console.log("href attribute:", link.getAttribute("href"));
+
+const b = document.getElementById("b");
+console.log("disabled:", b.disabled);
+b.removeAttribute("disabled");               // boolean attributes: present = true
+console.log("disabled now:", b.disabled);
+b.setAttribute("title", "Now you can");      // any attribute
+console.log(b.outerHTML);
+` },
+      { md: `<h3>Your own data: data-* attributes</h3>
+      <p>Attributes starting with <code>data-</code> are yours to use for storing information on elements — an id, a price, a
+      state. Read and write them through <code>el.dataset</code>, which converts names to camelCase
+      (<code>data-unit-price</code> → <code>dataset.unitPrice</code>). Values are always strings.</p>` },
+      { title: "dataset", html: `<ul>
+  <li class="product" data-sku="P-100" data-unit-price="2.50" data-qty="3">Pens</li>
+  <li class="product" data-sku="N-200" data-unit-price="4.25" data-qty="2">Notebooks</li>
+</ul>`, code: `
+let total = 0;
+for (const li of document.querySelectorAll(".product")) {
+  const { sku, unitPrice, qty } = li.dataset;
+  const line = Number(unitPrice) * Number(qty);
+  total += line;
+  li.dataset.line = line.toFixed(2);            // adds a data-line attribute
+  console.log(sku, li.textContent, "=", line.toFixed(2));
+}
+console.log("total:", total.toFixed(2));
+console.log(document.querySelector(".product").outerHTML);
+` },
+
+      { md: `<h2>Classes and styles</h2>
+      <p>Two ways to change how an element looks:</p>
+      <ul>
+        <li><strong>Classes</strong> (preferred): keep the look in CSS, and switch classes from JavaScript with
+        <code>el.classList.add</code>, <code>remove</code>, <code>toggle</code> (optionally forced: <code>toggle("on", condition)</code>),
+        <code>contains</code> and <code>replace</code>. <code>el.className</code> is the whole class string.</li>
+        <li><strong>Inline styles</strong>: <code>el.style.backgroundColor = "yellow"</code> — CSS property names in camelCase.
+        <code>el.style</code> only shows styles set inline, not ones from CSS rules; to read the style the browser actually used,
+        call <code>getComputedStyle(el)</code>.</li>
+      </ul>` },
+      { title: "classList, style and computed style", html: `<style>
+  .done { text-decoration: line-through; color: gray; }
+  .urgent { font-weight: bold; color: crimson; }
+</style>
+<ul>
+  <li id="milk" class="urgent">Milk</li>
+  <li id="eggs">Eggs</li>
+</ul>`, code: `
+const milk = document.getElementById("milk");
+milk.classList.replace("urgent", "done");
+console.log(milk.className, milk.classList.contains("done"));
+
+const eggs = document.getElementById("eggs");
+eggs.classList.toggle("urgent", true);          // force on
+eggs.style.backgroundColor = "#fff3bf";         // inline style
+console.log("inline color:", JSON.stringify(eggs.style.color));          // set by a CSS rule, not inline
+console.log("computed color:", getComputedStyle(eggs).color);
+console.log("computed weight:", getComputedStyle(eggs).fontWeight);
+console.log(eggs.outerHTML);
+` },
+      { md: `<p>To hide something, prefer the <code>hidden</code> property (<code>el.hidden = true</code>) or a class whose CSS says
+      <code>display: none</code>, over setting styles one by one.</p>` },
+
+      { md: `<h2>Forms</h2>
+      <p>Form controls are where users give a page data. Each kind has its own property:</p>
+      <table>
+        <tr><th>Control</th><th>Read with</th></tr>
+        <tr><td>text, email, number, textarea</td><td><code>.value</code> (a string; number inputs also have <code>.valueAsNumber</code>)</td></tr>
+        <tr><td>checkbox</td><td><code>.checked</code></td></tr>
+        <tr><td>radio buttons (same <code>name</code>)</td><td><code>form.elements.name.value</code>, or <code>querySelector("input[name=x]:checked")</code></td></tr>
+        <tr><td><code>select</code></td><td><code>.value</code>; <code>.selectedIndex</code>; <code>.options</code></td></tr>
+      </table>
+      <p>A <code>&lt;form&gt;</code> gives you its controls by <code>name</code> through <code>form.elements</code>, and
+      <code>document.forms</code> lists the page's forms.</p>` },
+      { title: "Reading a whole form", html: `<form id="order">
+  <label>Name <input name="customer" value="Ada"></label><br>
+  <label>Size
+    <select name="size"><option>small</option><option selected>medium</option><option>large</option></select>
+  </label><br>
+  Crust:
+  <label><input type="radio" name="crust" value="thin" checked> thin</label>
+  <label><input type="radio" name="crust" value="thick"> thick</label><br>
+  <label><input type="checkbox" name="extra" value="cheese" checked> cheese</label>
+  <label><input type="checkbox" name="extra" value="olives"> olives</label><br>
+  <button type="button" id="read">Read form</button>
+</form>`, code: `
+function readOrder() {
+  const f = document.getElementById("order").elements;
+  return {
+    customer: f.customer.value.trim(),
+    size: f.size.value,
+    crust: f.crust.value,                                    // the checked radio's value
+    extras: [...document.querySelectorAll("input[name=extra]:checked")].map(c => c.value),
+  };
+}
+
+console.log(readOrder());
+document.getElementById("read").addEventListener("click", () => console.log(readOrder()));
+` },
+      { md: `<div class="callout warn"><strong>Buttons inside forms submit them.</strong> A <code>&lt;button&gt;</code> in a
+      <code>&lt;form&gt;</code> defaults to <code>type="submit"</code>, which sends the form and reloads the page — wiping
+      your JavaScript's work. Use <code>type="button"</code> for buttons that just run code, or handle the form's
+      <code>submit</code> event and call <code>e.preventDefault()</code> (lesson 15).</div>` },
+
+      { md: `<h2>Seeing it in DevTools</h2>
+      <ul>
+        <li><strong>Elements</strong> panel: the live DOM. Changes your code makes appear (and flash) here. You can edit it directly too.</li>
+        <li>Select an element in Elements, then type <code>$0</code> in the Console to get that element as an object.</li>
+        <li><code>$("sel")</code> and <code>$$("sel")</code> in the Console are shortcuts for <code>querySelector</code> and
+        <code>querySelectorAll</code>.</li>
+        <li><code>console.dir(el)</code> shows all of an element's properties.</li>
+      </ul>
+      <p>The sandboxed pages in these examples are ordinary documents too — find them in the Elements panel inside an
+      <code>&lt;iframe&gt;</code>.</p>` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Update a heading", prompt: `Set the text of <code>#title</code> to <code>Welcome!</code>, add the class
+        <code>big</code> to it, and set the <code>#subtitle</code> paragraph's color to <code>gray</code>.`,
+        html: `<h1 id="title">Hello</h1>
+<p id="subtitle">Glad you're here.</p>`,
+        solution: `const title = document.getElementById("title");\ntitle.textContent = "Welcome!";\ntitle.classList.add("big");\ndocument.getElementById("subtitle").style.color = "gray";`,
+        checks: [{ label: "#title", run: `return _t.el("#title").outerHTML;` }, { label: "#subtitle color", run: `return _t.el("#subtitle").style.color;` }] },
+      { title: "Number the items", prompt: `For every <code>li.item</code>, in order, put its position in front of its text
+        (<code>1. Coffee</code>), and add the class <code>odd</code> to the 1st, 3rd, 5th… item.`,
+        html: `<ul><li class="item">Coffee</li><li class="item">Tea</li><li>(not an item)</li><li class="item">Juice</li></ul>`,
+        solution: `document.querySelectorAll("li.item").forEach((li, i) => {\n  li.textContent = (i + 1) + ". " + li.textContent;\n  if (i % 2 === 0) {\n    li.classList.add("odd");\n  }\n});`,
+        checks: [{ label: "the list", run: `return document.querySelector("ul").innerHTML;` }] },
+      { title: "Selected total", prompt: `Write <code>selectedTotal()</code>: add up the <code>data-price</code> of every
+        <code>.product</code> that also has the class <code>selected</code>, write it to <code>#total</code> as
+        <code>$0.00</code>, and return the number.`,
+        html: `<ul>
+  <li class="product selected" data-price="2.50">Pens</li>
+  <li class="product" data-price="4.25">Notebook</li>
+  <li class="product selected" data-price="19.99">Backpack</li>
+</ul>
+<p>Total: <span id="total"></span></p>`,
+        starter: `function selectedTotal() {\n\n}`,
+        solution: `function selectedTotal() {\n  let total = 0;\n  for (const el of document.querySelectorAll(".product.selected")) {\n    total += Number(el.dataset.price);\n  }\n  document.getElementById("total").textContent = "$" + total.toFixed(2);\n  return total;\n}`,
+        checks: [
+          { label: "as given", run: `return [selectedTotal(), _t.text("#total")];` },
+          { label: "select the notebook too", run: `_t.$$(".product")[1].classList.add("selected"); return [selectedTotal(), _t.text("#total")];` },
+        ] },
+      { title: "What changed?", prompt: `Write <code>changedFields()</code> returning the ids of the inputs inside
+        <code>#form</code> whose <strong>current</strong> value differs from the value written in their HTML, in page order.`,
+        hint: `Compare each input's <code>value</code> property with <code>getAttribute("value")</code> (or <code>defaultValue</code>).`,
+        html: `<div id="form">
+  <input id="first" value="Ada">
+  <input id="last" value="Lovelace">
+  <input id="city" value="London">
+</div>`,
+        starter: `function changedFields() {\n\n}`,
+        solution: `function changedFields() {\n  return [...document.querySelectorAll("#form input")]\n    .filter(input => input.value !== input.defaultValue)\n    .map(input => input.id);\n}`,
+        checks: [
+          { label: "nothing typed", run: `return changedFields();` },
+          { label: "edit first and city", run: `_t.type("#first", "Grace"); _t.type("#city", "New York"); return changedFields();` },
+          { label: "change first back", run: `_t.type("#first", "Ada"); return changedFields();` },
+        ] },
+      { title: "Read the signup form", prompt: `Write <code>readSignup()</code> returning
+        <code>{ name, email, plan, newsletter, country }</code> from the form: <code>name</code> and <code>email</code> trimmed,
+        <code>plan</code> the checked radio's value, <code>newsletter</code> a boolean, <code>country</code> the select's value.`,
+        html: `<form id="signup">
+  <input name="name" value="  Ada Lovelace ">
+  <input name="email" value="ada@example.com">
+  <label><input type="radio" name="plan" value="free"> Free</label>
+  <label><input type="radio" name="plan" value="pro" checked> Pro</label>
+  <label><input type="checkbox" name="newsletter"> Newsletter</label>
+  <select name="country"><option value="us">USA</option><option value="uk" selected>UK</option></select>
+</form>`,
+        starter: `function readSignup() {\n\n}`,
+        solution: `function readSignup() {\n  const f = document.getElementById("signup").elements;\n  return {\n    name: f.name.value.trim(),\n    email: f.email.value.trim(),\n    plan: f.plan.value,\n    newsletter: f.newsletter.checked,\n    country: f.country.value,\n  };\n}`,
+        checks: [
+          { label: "as given", run: `return readSignup();` },
+          { label: "after changes", run: `document.querySelector("input[value=free]").checked = true; document.querySelector("input[name=newsletter]").checked = true; document.querySelector("select").value = "us"; return readSignup();` },
+        ] },
+      { title: "Count the node types", prompt: `Write <code>countNodes(el)</code> returning
+        <code>{ elements, text, comments }</code>: how many of <code>el</code>'s <strong>direct</strong> child nodes are elements
+        (<code>nodeType</code> 1), text (3) and comments (8). Whitespace text nodes count.`,
+        html: `<div id="box">
+  <p>One</p>
+  <!-- note -->
+  <p>Two</p>Loose text</div>
+<div id="empty"></div>`,
+        starter: `function countNodes(el) {\n\n}`,
+        solution: `function countNodes(el) {\n  const counts = { elements: 0, text: 0, comments: 0 };\n  for (const node of el.childNodes) {\n    if (node.nodeType === 1) counts.elements++;\n    else if (node.nodeType === 3) counts.text++;\n    else if (node.nodeType === 8) counts.comments++;\n  }\n  return counts;\n}`,
+        checks: [{ label: "#box", run: `return countNodes(_t.el("#box"));` }, { label: "#empty", run: `return countNodes(_t.el("#empty"));` }] },
+      { title: "Show / hide", prompt: `When <code>#toggle</code> is clicked, toggle the class <code>hidden</code> on
+        <code>#panel</code>, and set the button's text to <code>Show</code> if the panel is now hidden, otherwise
+        <code>Hide</code>.`,
+        html: `<style>.hidden { display: none; }</style>
+<button id="toggle">Hide</button>
+<div id="panel">Secret details</div>`,
+        solution: `document.getElementById("toggle").addEventListener("click", () => {\n  const panel = document.getElementById("panel");\n  panel.classList.toggle("hidden");\n  document.getElementById("toggle").textContent = panel.classList.contains("hidden") ? "Show" : "Hide";\n});`,
+        checks: [
+          { label: "click once", run: `_t.click("#toggle"); return [_t.el("#panel").className, _t.text("#toggle")];` },
+          { label: "click again", run: `_t.click("#toggle"); return [_t.el("#panel").className, _t.text("#toggle")];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>The browser parses HTML into the DOM — a tree of node objects — and redraws the screen whenever the DOM changes.</li>
+        <li>The DOM isn't the source: the browser repairs markup, and JavaScript changes it. DevTools' Elements panel shows the live DOM.</li>
+        <li>Node types: element (1), text (3, including whitespace), comment (8), document (9).</li>
+        <li><code>window</code> is the global object; <code>document</code> is the root of the DOM. Scripts run when parsed — use
+        <code>defer</code>, end-of-body scripts, or <code>DOMContentLoaded</code>.</li>
+        <li>Find with <code>getElementById</code>, <code>querySelector(All)</code> and CSS selectors; <code>querySelectorAll</code> is a snapshot,
+        <code>getElementsBy…</code> is live.</li>
+        <li>Change with <code>textContent</code> (safe), <code>innerHTML</code> (never with user input), attributes vs properties,
+        <code>dataset</code>, <code>classList</code>, <code>style</code> / <code>getComputedStyle</code>; read forms through <code>form.elements</code>.</li>
+      </ul></div>
+      <p>Next, <strong>DOM II</strong>: creating, moving, and removing elements, building pages from data, and walking the tree.</p>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

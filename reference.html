@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reference — CSC 227 JS</title>
+  <link rel="stylesheet" href="lessons/lesson.css">
+  <style>
+    .ref{max-width:52rem;margin:1rem auto 3rem;padding:0 1.25rem;}
+    .ref h2{border-top:1px solid var(--line);padding-top:1rem;}
+    .ref h2 a.lesson{font-size:.78rem;font-weight:600;margin-left:.5rem;color:var(--accent);text-decoration:none;}
+    .ref table{width:100%;}
+    .ref td:first-child{white-space:nowrap;}
+    .ref nav.toc{display:flex;flex-wrap:wrap;gap:.35rem .9rem;font-size:.9rem;margin:.6rem 0 1rem;}
+    .ref nav.toc a{color:var(--accent);text-decoration:none;}
+    @media (max-width:640px){.ref td:first-child{white-space:normal;}}
+  </style>
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Introduction to JavaScript</div>
+    <h1>Reference</h1>
+    <p class="lead">The syntax and built-ins the course covers, on one page. Each section links to the lesson that teaches it.</p>
+  </header>
+
+  <main class="ref md">
+    <nav class="toc">
+      <a href="#values">Values</a><a href="#vars">Variables</a><a href="#ops">Operators</a><a href="#control">Control flow</a>
+      <a href="#functions">Functions</a><a href="#strings">Strings</a><a href="#arrays">Arrays</a><a href="#objects">Objects</a>
+      <a href="#errors">Errors</a><a href="#dom">DOM</a><a href="#events">Events</a><a href="#network">Network</a>
+      <a href="#async">Async</a><a href="#storage">Storage</a><a href="#node">Node</a><a href="#react">React</a><a href="#git">Git</a>
+    </nav>
+
+    <h2 id="values">Values &amp; types <a class="lesson" href="lessons/02-values-variables.html">lesson 2 →</a></h2>
+    <table>
+      <tr><th>Type</th><th>Examples</th><th>Notes</th></tr>
+      <tr><td><code>string</code></td><td><code>"hi"</code> <code>'hi'</code> <code>`hi ${x}`</code></td><td>immutable; <code>.length</code></td></tr>
+      <tr><td><code>number</code></td><td><code>3</code> <code>3.14</code> <code>7e97</code> <code>NaN</code> <code>Infinity</code></td><td>one type for all numbers</td></tr>
+      <tr><td><code>boolean</code></td><td><code>true</code> <code>false</code></td><td></td></tr>
+      <tr><td><code>undefined</code> / <code>null</code></td><td></td><td>"no value yet" / "deliberately empty"</td></tr>
+      <tr><td>object, array, function</td><td><code>{ a: 1 }</code> <code>[1, 2]</code> <code>x =&gt; x</code></td><td>passed by reference</td></tr>
+    </table>
+    <p><code>typeof x</code> · <code>Number("42")</code> · <code>String(42)</code> · <code>parseInt("42px")</code> ·
+      <code>(3.14159).toFixed(2)</code> · <code>Number.isNaN(x)</code> · <code>Math.round / floor / ceil / max / min / abs / sqrt / random</code></p>
+    <p>Falsy: <code>false 0 "" null undefined NaN</code> — everything else is truthy.</p>
+
+    <h2 id="vars">Variables &amp; scope <a class="lesson" href="lessons/02-values-variables.html">lesson 2 →</a></h2>
+    <pre class="code">const pi = 3.14159;     // can't be reassigned (prefer this)
+let count = 0;          // can be reassigned
+count += 1; count++;    // update shortcuts
+{ let inner = 1; }      // block scope: inner doesn't exist out here</pre>
+    <p>Never <code>var</code>. Names are case-sensitive camelCase. Prefer locals and <code>return</code> to globals
+      (<a href="lessons/06-loops.html">lesson 6</a>).</p>
+
+    <h2 id="ops">Operators <a class="lesson" href="lessons/05-decisions.html">lesson 5 →</a></h2>
+    <table>
+      <tr><td>Arithmetic</td><td><code>+ - * / % **</code></td></tr>
+      <tr><td>Comparison</td><td><code>=== !== &lt; &gt; &lt;= &gt;=</code> (never <code>==</code>)</td></tr>
+      <tr><td>Logical</td><td><code>! &amp;&amp; ||</code> (short-circuit), <code>a ?? b</code> (fallback for null/undefined)</td></tr>
+      <tr><td>Conditional</td><td><code>cond ? a : b</code></td></tr>
+      <tr><td>Spread / rest</td><td><code>[...arr]</code> <code>{ ...obj }</code> <code>f(...args)</code> <code>function f(...rest)</code></td></tr>
+    </table>
+
+    <h2 id="control">Control flow <a class="lesson" href="lessons/06-loops.html">lessons 5–6 →</a></h2>
+    <pre class="code">if (x &gt; 0) { … } else if (x &lt; 0) { … } else { … }
+
+switch (day) { case "Sat": case "Sun": return "weekend"; default: return "weekday"; }
+
+while (cond) { … }
+do { … } while (cond);
+for (let i = 0; i &lt; n; i++) { … }
+for (const item of array) { … }
+for (const key in object) { … }
+break;  continue;</pre>
+
+    <h2 id="functions">Functions <a class="lesson" href="lessons/03-functions.html">lessons 3, 12, 17 →</a></h2>
+    <pre class="code">function area(w, h = 1) { return w * h; }      // declaration, default parameter
+const area2 = function (w, h) { return w * h; }; // expression
+const area3 = (w, h) =&gt; w * h;                   // arrow, implicit return
+const point = (x, y) =&gt; ({ x, y });              // arrow returning an object
+const [a, b] = pair();  const { min, max } = stats(nums);   // destructuring results
+
+function Counter() {                              // closure: private state
+  let n = 0;
+  return { inc() { n++; }, get: () =&gt; n };
+}</pre>
+    <p>Recursion: a base case plus a call on a smaller problem (<a href="lessons/17-functional.html">lesson 17</a>).</p>
+
+    <h2 id="strings">Strings <a class="lesson" href="lessons/08-strings.html">lesson 8 →</a></h2>
+    <table>
+      <tr><td><code>s.length</code> · <code>s[i]</code> · <code>s.at(-1)</code></td><td>length, characters</td></tr>
+      <tr><td><code>s.indexOf(x)</code> · <code>lastIndexOf</code> · <code>includes</code> · <code>startsWith</code> · <code>endsWith</code></td><td>searching (−1 / booleans)</td></tr>
+      <tr><td><code>s.toUpperCase()</code> · <code>toLowerCase</code> · <code>trim</code> · <code>trimStart</code> · <code>trimEnd</code></td><td>case and whitespace</td></tr>
+      <tr><td><code>s.substring(a, b)</code> · <code>s.slice(a, b)</code></td><td>parts (b excluded; slice allows negatives)</td></tr>
+      <tr><td><code>s.replace(a, b)</code> · <code>replaceAll</code> · <code>split(sep)</code> · <code>repeat(n)</code> · <code>padStart(n, c)</code></td><td>transforming</td></tr>
+      <tr><td><code>a.localeCompare(b)</code></td><td>human-friendly ordering</td></tr>
+    </table>
+
+    <h2 id="arrays">Arrays <a class="lesson" href="lessons/09-arrays.html">lesson 9 →</a></h2>
+    <table>
+      <tr><td><code>push</code> / <code>pop</code> · <code>unshift</code> / <code>shift</code></td><td>add/remove at end / start (in place)</td></tr>
+      <tr><td><code>includes</code> · <code>indexOf</code> · <code>find</code> · <code>findIndex</code> · <code>some</code> · <code>every</code></td><td>searching</td></tr>
+      <tr><td><code>slice(a, b)</code> · <code>[...a]</code></td><td>copies</td></tr>
+      <tr><td><code>splice(i, n, …items)</code> · <code>sort(cmp)</code> · <code>reverse()</code></td><td>change in place — numbers: <code>sort((a, b) =&gt; a - b)</code></td></tr>
+      <tr><td><code>map(f)</code> · <code>filter(f)</code> · <code>reduce(f, start)</code> · <code>forEach(f)</code></td><td>transform / select / combine / visit</td></tr>
+      <tr><td><code>join(sep)</code> · <code>Array.isArray(x)</code> · <code>Array.from({ length: n }, (_, i) =&gt; i)</code></td><td></td></tr>
+    </table>
+
+    <h2 id="objects">Objects &amp; maps <a class="lesson" href="lessons/10-objects-maps.html">lessons 10–11 →</a></h2>
+    <pre class="code">const ages = { rover: 8, "fido the dog": 3 };
+ages.rover;  ages["fido the dog"];  ages[key];    // read (brackets for variable keys)
+ages.rex = 2;  delete ages.rover;                 // add / overwrite, remove
+"rex" in ages;  Object.hasOwn(ages, "rex");       // exists?
+Object.keys(ages);  Object.values(ages);  Object.entries(ages);
+counts[w] = (counts[w] ?? 0) + 1;                  // the counting pattern
+JSON.stringify(obj);  JSON.parse(text);
+const m = new Map(); m.set(k, v); m.get(k); m.has(k); m.size;</pre>
+
+    <h2 id="errors">Errors <a class="lesson" href="lessons/16-errors.html">lessons 4, 16 →</a></h2>
+    <pre class="code">throw new Error("message");          // also TypeError, RangeError
+try { risky(); } catch (e) { console.log(e.name, e.message); } finally { cleanUp(); }
+return [error, undefined];  /  return [undefined, value];   // errors as values</pre>
+    <p>SyntaxError (can't read it) · ReferenceError (no such name) · TypeError (wrong use of a value) · RangeError (out of
+      range, or endless recursion). DevTools: <kbd>F12</kbd>; pause with breakpoints or <code>debugger;</code>.</p>
+
+    <h2 id="dom">The DOM <a class="lesson" href="lessons/13-dom-1.html">lessons 7, 13–14 →</a></h2>
+    <table>
+      <tr><td><code>document.getElementById(id)</code> · <code>querySelector(sel)</code> · <code>querySelectorAll(sel)</code></td><td>find</td></tr>
+      <tr><td><code>el.value</code> · <code>el.checked</code> · <code>el.textContent</code> · <code>el.innerHTML</code></td><td>read / write (never put user input in innerHTML)</td></tr>
+      <tr><td><code>el.classList.add/remove/toggle/contains</code> · <code>el.style.color</code> · <code>el.dataset.x</code> · <code>setAttribute</code></td><td>classes, styles, data, attributes</td></tr>
+      <tr><td><code>document.createElement(tag)</code> · <code>parent.append(el)</code> · <code>el.before/after</code> · <code>el.remove()</code> · <code>replaceChildren()</code></td><td>create, attach, delete</td></tr>
+      <tr><td><code>parentElement</code> · <code>children</code> · <code>firstElementChild</code> · <code>nextElementSibling</code> · <code>closest(sel)</code></td><td>traverse</td></tr>
+    </table>
+
+    <h2 id="events">Events <a class="lesson" href="lessons/15-events.html">lesson 15 →</a></h2>
+    <pre class="code">el.addEventListener("click", e =&gt; { e.target; e.currentTarget; e.preventDefault(); });
+el.addEventListener("keydown", e =&gt; { if (e.key === "Enter") { … } });
+el.addEventListener("input", handler);  el.removeEventListener("input", handler);
+el.addEventListener("click", handler, { once: true });
+list.addEventListener("click", e =&gt; { const li = e.target.closest("li"); … });   // delegation
+const id = setTimeout(fn, ms); clearTimeout(id);  setInterval(fn, ms); clearInterval(id);</pre>
+
+    <h2 id="network">Network <a class="lesson" href="lessons/18-ajax.html">lesson 18 →</a></h2>
+    <pre class="code">const req = new XMLHttpRequest();
+req.addEventListener("load", e =&gt; { if (e.target.status &gt;= 400) { … } JSON.parse(e.target.responseText); });
+req.addEventListener("error", …);  req.addEventListener("timeout", …);  req.timeout = 5000;
+req.open("GET", url, true);  req.send();
+// POST JSON: req.setRequestHeader("Content-Type", "application/json"); req.send(JSON.stringify(data));</pre>
+    <p>Status: 200 OK · 201 Created · 400 Bad Request · 404 Not Found · 405 Method Not Allowed · 500 Server Error.</p>
+
+    <h2 id="async">Async / await <a class="lesson" href="lessons/19-async-await.html">lesson 19 →</a></h2>
+    <pre class="code">async function getJson(url) {
+  const resp = await fetch(url);                 // rejects only on network failure
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  return resp.json();
+}
+const results = await Promise.all(urls.map(getJson));   // in parallel
+await Promise.allSettled(promises);  await Promise.race([p, timeout(ms)]);
+new Promise((resolve, reject) =&gt; setTimeout(resolve, ms));</pre>
+
+    <h2 id="storage">localStorage <a class="lesson" href="lessons/20-localstorage.html">lesson 20 →</a></h2>
+    <pre class="code">localStorage.setItem("key", "value");  localStorage.getItem("key");   // null if missing
+localStorage.removeItem("key");  localStorage.clear();
+localStorage.key(i);  localStorage.length;
+localStorage.setItem("prefs", JSON.stringify(obj));  JSON.parse(localStorage.getItem("prefs") ?? "{}");</pre>
+    <p>Strings only, ~5 MB per site, persists across restarts. Never store passwords or other secrets.</p>
+
+    <h2 id="node">Node.js <a class="lesson" href="lessons/21-node.html">lesson 21 →</a></h2>
+    <pre class="code">const http = require('http');
+http.createServer((req, res) =&gt; {
+  const u = new URL(req.url, `http://${req.headers.host}`);   // u.pathname, u.searchParams.get("x")
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'application/json');
+  res.end(JSON.stringify({ ok: true }));
+}).listen(3000, '127.0.0.1', () =&gt; console.log('ready'));</pre>
+    <p><code>node file.js</code> · <code>node --watch server.js</code> · <code>npm i package</code> · <code>npm create vite@latest</code></p>
+
+    <h2 id="react">React <a class="lesson" href="lessons/22-react-npm.html">lesson 22 →</a></h2>
+    <pre class="code">function Counter({ step = 1 }) {                       // props
+  const [count, setCount] = React.useState(0);         // state
+  React.useEffect(() =&gt; { /* load data */ }, []);      // effect after first render
+  return (
+    &lt;div className="counter"&gt;
+      &lt;p&gt;Count: {count}&lt;/p&gt;
+      &lt;button onClick={() =&gt; setCount(count + step)}&gt;+{step}&lt;/button&gt;
+      {items.map(it =&gt; &lt;li key={it.id}&gt;{it.text}&lt;/li&gt;)}
+      {count &gt; 10 &amp;&amp; &lt;strong&gt;Big!&lt;/strong&gt;}
+    &lt;/div&gt;
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(&lt;Counter /&gt;);</pre>
+
+    <h2 id="git">Git &amp; pull requests <a class="lesson" href="lessons/01-getting-started.html">lesson 1 →</a></h2>
+    <pre class="code" data-lang="text">git checkout main &amp;&amp; git pull            # start from the latest main
+git checkout -b lab-02                    # branch for the work
+git add . &amp;&amp; git commit -m "Lab 02"       # snapshot
+git push -u origin lab-02                 # publish the branch
+gh pr create --fill                       # open the pull request
+git status · git log --oneline · git diff · git branch</pre>
+  </main>
+
+  <script type="module">
+    // Highlight the JavaScript blocks the same way lessons do.
+    import { highlight, dedent } from "./lessons/lesson.js";
+    for (const pre of document.querySelectorAll("pre.code:not([data-lang])")) {
+      pre.innerHTML = `<code>${highlight(dedent(pre.textContent))}</code>`;
+    }
+  </script>
+  <script type="module" src="./site-nav.js"></script>
+</body>
+</html>

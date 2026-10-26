@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>09 · Arrays — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 9 of 22</div>
+    <h1>09 · Arrays</h1>
+    <p class="lead">Keep many values in one ordered list: index it, grow and shrink it, sort it, and transform it.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-09">✏️ Practice this lesson → Lab 09 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Many values, one name</h2>
+      <p>An <strong>array</strong> stores multiple values in memory, in order. You write one with square brackets, and
+      read a value by its <strong>index</strong> — its position, starting from <strong>0</strong>.</p>` },
+      { title: "Creating and indexing", code: `
+const a = [1, 3, 5, 7];
+let x = a[0];
+x += a[1];
+console.log(x);              // 1 + 3
+console.log(a[3], a[a.length - 1]);
+console.log(a[4]);           // past the end: undefined
+console.log(a.at(-1));       // last element
+console.log(a);
+` },
+      { md: `<p>Arrays have a <code>length</code>, which can change over time, and individual slots can be updated after
+      the array is created.</p>` },
+      { title: "length and updating slots", code: `
+const a = [1, 3, 5];
+console.log(a.length);
+a[0] += 1;
+a[1] = "three";
+console.log(a);
+a[5] = 11;                   // writing past the end grows the array (with holes)
+console.log(a, a.length);
+` },
+      { md: `<p>An array may mix types — though most arrays hold one kind of thing (they're <em>homogeneous</em>):</p>
+      <pre class="code">let battingAvgs = [.187, .312, .280, .242];
+let player1 = [17, "Mickey Mantle", "Yankees"];</pre>
+      <p>(For a record like <code>player1</code>, where each position means something different, an <em>object</em> with
+      named fields is usually better — that's lesson 10.)</p>
+      <div class="callout warn"><strong><code>const</code> arrays can still change.</strong> <code>const</code> means the
+      variable will always refer to the <em>same</em> array; it doesn't freeze the array's contents.
+      <code>const a = [1]; a.push(2);</code> is fine. <code>a = [3];</code> is the error.</div>` },
+
+      { md: `<h2>Looping over an array</h2>
+      <p>The classic index loop runs <code>i</code> from 0 to <code>length - 1</code>. When you don't need the index,
+      <code>for…of</code> hands you each element directly.</p>` },
+      { title: "Two ways to loop", code: `
+const temps = [68, 71, 75, 73, 69];
+
+for (let i = 0; i < temps.length; i++) {
+  console.log("day " + (i + 1) + ": " + temps[i]);
+}
+
+let total = 0;
+for (const t of temps) {
+  total += t;
+}
+console.log("average:", total / temps.length);
+
+let hottest = temps[0];
+for (const t of temps) {
+  if (t > hottest) {
+    hottest = t;
+  }
+}
+console.log("hottest:", hottest, "  (built-in:", Math.max(...temps) + ")");
+` },
+      { md: `<div class="callout warn"><strong>Off by one.</strong> The last index is <code>length - 1</code>. A loop with
+      <code>i &lt;= a.length</code> reads one slot too far and gets <code>undefined</code> — which quietly turns sums into
+      <code>NaN</code>.</div>` },
+
+      { md: `<h2>Adding and removing at the ends</h2>
+      <table>
+        <tr><th>Method</th><th>Does</th><th>Returns</th></tr>
+        <tr><td><code>a.push(9)</code></td><td>adds 9 to the end</td><td>new length</td></tr>
+        <tr><td><code>a.pop()</code></td><td>removes the last element</td><td>that element</td></tr>
+        <tr><td><code>a.unshift(9)</code></td><td>adds 9 to the start, shifting everything later</td><td>new length</td></tr>
+        <tr><td><code>a.shift()</code></td><td>removes the first element, shifting everything earlier</td><td>that element</td></tr>
+      </table>` },
+      { title: "push, pop, unshift, shift", code: `
+const a = [1, 2, 3];
+a.push(4);
+console.log(a);              // [1, 2, 3, 4]
+a.unshift(0);
+console.log(a);              // [0, 1, 2, 3, 4]
+const last = a.pop();
+console.log(last, a);        // 4 [0, 1, 2, 3]
+const first = a.shift();
+console.log(first, a);       // 0 [1, 2, 3]
+` },
+      { title: "Building an array in a loop", code: `
+const squares = [];
+for (let i = 1; i <= 6; i++) {
+  squares.push(i * i);
+}
+console.log(squares);
+
+const words = "the quick brown fox jumps".split(" ");
+const long = [];
+for (const w of words) {
+  if (w.length > 3) {
+    long.push(w);
+  }
+}
+console.log(long);
+` },
+
+      { md: `<h2>Searching and slicing</h2>` },
+      { title: "includes, indexOf, slice, splice", code: `
+const colors = ["red", "green", "blue", "green"];
+console.log(colors.includes("blue"), colors.includes("pink"));
+console.log(colors.indexOf("green"), colors.lastIndexOf("green"), colors.indexOf("pink"));
+
+console.log(colors.slice(1, 3));   // a copy of positions 1..2; colors unchanged
+console.log(colors.slice(-2));
+
+const removed = colors.splice(1, 2);           // remove 2 elements at index 1 (changes colors!)
+console.log(removed, colors);
+colors.splice(1, 0, "yellow", "purple");       // insert without removing
+console.log(colors);
+` },
+
+      { md: `<h2>Sorting and reversing</h2>
+      <p><code>a.reverse()</code> and <code>a.sort()</code> rearrange the array <strong>in place</strong> (and also return
+      it).</p>` },
+      { title: "sort and reverse", code: `
+let a = [2, 1, 3];
+a.sort().reverse();
+console.log(a);                       // [3, 2, 1]
+
+const names = ["Walters", "kennis", "Quick", "adams"];
+names.sort();
+console.log(names);                   // capitals first!
+` },
+      { md: `<div class="callout warn"><strong>The default sort compares as text.</strong> <code>[10, 9, 100].sort()</code>
+      gives <code>[10, 100, 9]</code>, because "10" &lt; "100" &lt; "9" alphabetically. To sort numbers, pass a
+      <strong>compare function</strong> that returns a negative number if <code>a</code> should come first, positive if
+      <code>b</code> should, and 0 for a tie — for numbers, simply <code>a - b</code>.</div>` },
+      { title: "Sorting numbers correctly", code: `
+function numCompare(a, b) {
+  return a - b;
+}
+
+const nums = [10, 9, 100, 25, 1];
+console.log([...nums].sort());            // wrong for numbers
+console.log([...nums].sort(numCompare));  // ascending
+console.log([...nums].sort((a, b) => b - a));   // descending, with an arrow function
+
+const words = ["banana", "Apple", "cherry"];
+console.log(words.sort((a, b) => a.localeCompare(b)));
+` },
+
+      { md: `<h2>Strings ⇄ arrays</h2>` },
+      { title: "split and join", code: `
+const s = "Today is rainy";
+const a = s.split(" ");
+console.log(a);                 // ["Today", "is", "rainy"]
+const ns = a.join("-");
+console.log(ns);                // "Today-is-rainy"
+console.log("a,b,c".split(",").reverse().join(","));
+console.log([1, 2, 3].join(" + ") + " = 6");
+` },
+
+      { md: `<h2>Arrays are passed by reference</h2>
+      <p>A variable holding an array holds a <em>reference</em> to it — a pointer to one array in memory. Assigning it to
+      another variable, or passing it to a function, shares that same array. So a function <em>can</em> change an array you
+      pass it. ("Can" and "should" are different words: sometimes you will, but most often you won't.)</p>` },
+      { title: "The function changes the caller's array", code: `
+function addOne(a) {
+  for (let i = 0; i < a.length; i++) {
+    a[i]++;
+  }
+}
+const nums = [1, 2, 3];
+addOne(nums);
+console.log(nums);          // [2, 3, 4]
+` },
+      { md: `<p>Numbers and strings are different: they're passed by <strong>value</strong>, so the function gets its own copy.</p>` },
+      { title: "But numbers are copied", code: `
+function addOne(x) {
+  x++;
+}
+let x = 9;
+addOne(x);
+console.log(x);             // 9 — unchanged
+` },
+      { title: "Sharing versus copying", code: `
+const original = [1, 2, 3];
+const alias = original;          // the SAME array
+const copy = [...original];      // a NEW array with the same elements (spread)
+alias.push(4);
+console.log(original, alias, copy);
+console.log(original === alias, original === copy);
+
+// A pure version of addOne returns a new array instead of changing the input
+function plusOne(a) {
+  const result = [];
+  for (const v of a) {
+    result.push(v + 1);
+  }
+  return result;
+}
+console.log(plusOne(original), original);
+` },
+
+      { md: `<h2>Transforming arrays: forEach, map, filter, reduce, find</h2>
+      <p>Arrays have methods that take a <strong>function</strong> and call it for each element. They replace most hand-written
+      loops with one readable line. The function is usually written as an arrow function: <code>x =&gt; x * 2</code>
+      means "given <code>x</code>, return <code>x * 2</code>".</p>
+      <table>
+        <tr><th>Method</th><th>Returns</th></tr>
+        <tr><td><code>a.forEach(f)</code></td><td>nothing — just calls <code>f</code> on each element</td></tr>
+        <tr><td><code>a.map(f)</code></td><td>a new array of <code>f(element)</code> for each element</td></tr>
+        <tr><td><code>a.filter(f)</code></td><td>a new array of the elements where <code>f</code> returns true</td></tr>
+        <tr><td><code>a.reduce(f, start)</code></td><td>one value, combined step by step: <code>f(soFar, element)</code></td></tr>
+        <tr><td><code>a.find(f)</code> / <code>a.findIndex(f)</code></td><td>the first element (or index) where <code>f</code> is true</td></tr>
+        <tr><td><code>a.some(f)</code> / <code>a.every(f)</code></td><td>whether any / all elements pass</td></tr>
+      </table>` },
+      { title: "map, filter, reduce", code: `
+const prices = [4.99, 12.5, 3.25, 20];
+
+prices.forEach((p, i) => console.log(i, p));
+
+const withTax = prices.map(p => Math.round(p * 1.08 * 100) / 100);
+console.log(withTax);
+
+const cheap = prices.filter(p => p < 10);
+console.log(cheap);
+
+const total = prices.reduce((sum, p) => sum + p, 0);
+console.log(total);
+
+console.log(prices.find(p => p > 10), prices.findIndex(p => p > 10));
+console.log(prices.some(p => p > 15), prices.every(p => p > 1));
+
+// chain them: total of the cheap items, with tax
+console.log(prices.filter(p => p < 10).map(p => p * 1.08).reduce((s, p) => s + p, 0).toFixed(2));
+` },
+
+      { md: `<h2>Arrays of arrays</h2>
+      <p>An element can itself be an array, which gives you a grid: <code>grid[row][col]</code>.</p>` },
+      { title: "A 2D grid", code: `
+const grid = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+];
+console.log(grid[1][2]);         // row 1, column 2: 6
+for (const row of grid) {
+  console.log(row.join(" "));
+}
+let diagonal = 0;
+for (let i = 0; i < grid.length; i++) {
+  diagonal += grid[i][i];
+}
+console.log("diagonal sum:", diagonal);
+` },
+
+      { md: `<h2>Arrays and the page</h2>
+      <p>The original lecture example: ten inputs, and a button that finds the highest number entered. The ids are
+      built in a loop (<code>input0</code> … <code>input9</code>), empty boxes are skipped, and a numeric sort puts the
+      highest first.</p>` },
+      { title: "HighestInForm", html: `<input id="input0" value="12"><br>
+<input id="input1" value="7"><br>
+<input id="input2" value="105"><br>
+<input id="input3"><br>
+<input id="input4" value="33"><br>
+<input id="input5"><br>
+<input id="input6"><br>
+<input id="input7"><br>
+<input id="input8"><br>
+<input id="input9"><br>
+<button onclick="findHighestInForm()">Find highest</button><br>
+<input id="result">`, code: `
+function numCompare(a, b) {
+  return a - b;
+}
+
+function findHighestInForm() {
+  const vals = [];
+  for (let i = 0; i < 10; i++) {
+    const v = document.getElementById(\`input\${i}\`).value;
+    if (v !== "") {
+      vals.push(Number(v));
+    }
+  }
+  const highest = vals.sort(numCompare).reverse()[0];
+  document.getElementById('result').value = highest;
+}
+` },
+      { md: `<p>Try it, then try removing <code>numCompare</code> from the <code>sort</code> call: with 12, 7, 105 and 33 the
+      "highest" becomes 7, because as text "7" sorts after "33".</p>` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Sum", prompt: `Write <code>sum(nums)</code> returning the total of an array of numbers, using a loop.
+        <code>sum([])</code> is 0.`,
+        solution: `function sum(nums) {\n  let total = 0;\n  for (const n of nums) {\n    total += n;\n  }\n  return total;\n}`,
+        checks: [{ expr: "sum([1, 2, 3])" }, { expr: "sum([])" }, { expr: "sum([-5, 10.5])" }] },
+      { title: "Largest", prompt: `Write <code>largest(nums)</code> returning the biggest number in a non-empty array —
+        with a loop, not <code>Math.max</code> or <code>sort</code>.`,
+        solution: `function largest(nums) {\n  let best = nums[0];\n  for (const n of nums) {\n    if (n > best) {\n      best = n;\n    }\n  }\n  return best;\n}`,
+        checks: [{ expr: "largest([3, 9, 2])" }, { expr: "largest([-4, -2, -8])" }, { expr: "largest([7])" }] },
+      { title: "Count above", prompt: `Write <code>countAbove(nums, limit)</code>: how many elements are greater than
+        <code>limit</code>.`,
+        solution: `function countAbove(nums, limit) {\n  let count = 0;\n  for (const n of nums) {\n    if (n > limit) {\n      count++;\n    }\n  }\n  return count;\n}`,
+        checks: [{ expr: "countAbove([1, 5, 10, 15], 5)" }, { expr: "countAbove([], 0)" }, { expr: "countAbove([3, 3, 3], 2)" }] },
+      { title: "Reversed copy", prompt: `Write <code>reversed(arr)</code> returning a <strong>new</strong> array in reverse
+        order, without changing <code>arr</code>.`,
+        solution: `function reversed(arr) {\n  const result = [];\n  for (let i = arr.length - 1; i >= 0; i--) {\n    result.push(arr[i]);\n  }\n  return result;\n}`,
+        checks: [{ expr: "reversed([1, 2, 3])" }, { expr: "reversed([])" },
+          { label: "original unchanged", run: "const a = [1, 2, 3]; reversed(a); return a;" }] },
+      { title: "No duplicates", prompt: `Write <code>unique(arr)</code> returning a new array with each value only once,
+        in the order first seen. <code>unique([1, 2, 1, 3, 2])</code> is <code>[1, 2, 3]</code>.`,
+        solution: `function unique(arr) {\n  const result = [];\n  for (const v of arr) {\n    if (!result.includes(v)) {\n      result.push(v);\n    }\n  }\n  return result;\n}`,
+        checks: [{ expr: "unique([1, 2, 1, 3, 2])" }, { expr: `unique(["a", "a"])` }, { expr: "unique([])" }] },
+      { title: "map, filter, reduce", prompt: `Using <code>map</code>, <code>filter</code> and <code>reduce</code> (one each,
+        no loops), write <code>doubled(nums)</code> (every number × 2), <code>evens(nums)</code> (only even numbers), and
+        <code>product(nums)</code> (all numbers multiplied; <code>product([])</code> is 1).`,
+        starter: `function doubled(nums) {\n\n}\n\nfunction evens(nums) {\n\n}\n\nfunction product(nums) {\n\n}`,
+        solution: `function doubled(nums) {\n  return nums.map(n => n * 2);\n}\n\nfunction evens(nums) {\n  return nums.filter(n => n % 2 === 0);\n}\n\nfunction product(nums) {\n  return nums.reduce((p, n) => p * n, 1);\n}`,
+        checks: [{ expr: "doubled([1, 2, 3])" }, { expr: "evens([1, 2, 3, 4, 6])" }, { expr: "product([2, 3, 4])" }, { expr: "product([])" }] },
+      { title: "Sort scores", prompt: `Write <code>topThree(scores)</code> returning the three highest scores, highest
+        first, <strong>without changing</strong> the original array. Fewer than three scores? Return them all, sorted.`,
+        solution: `function topThree(scores) {\n  return [...scores].sort((a, b) => b - a).slice(0, 3);\n}`,
+        hint: `Copy with <code>[...scores]</code>, sort descending with <code>(a, b) =&gt; b - a</code>, then <code>slice(0, 3)</code>.`,
+        checks: [{ expr: "topThree([50, 90, 70, 100, 85])" }, { expr: "topThree([9, 10])" },
+          { label: "original unchanged", run: "const s = [3, 1, 2]; topThree(s); return s;" }] },
+      { title: "Shopping list page", prompt: `Make the <strong>Add</strong> button append the text in <code>#item</code>
+        to an array, then show the whole list in <code>#list</code> as text joined with <code>", "</code>, and the count
+        in <code>#count</code> (just the number). Ignore empty input, and clear <code>#item</code> after adding.`,
+        html: `<input id="item" placeholder="Item"> <button id="add">Add</button>
+<p>List: <span id="list"></span></p>
+<p>Items: <span id="count">0</span></p>`,
+        starter: `const items = [];\n\ndocument.getElementById("add").addEventListener("click", () => {\n  // your code here\n});`,
+        solution: `const items = [];\n\ndocument.getElementById("add").addEventListener("click", () => {\n  const box = document.getElementById("item");\n  const text = box.value.trim();\n  if (text === "") {\n    return;\n  }\n  items.push(text);\n  box.value = "";\n  document.getElementById("list").textContent = items.join(", ");\n  document.getElementById("count").textContent = items.length;\n});`,
+        checks: [
+          { label: "add milk, eggs", run: `_t.type("#item", "milk"); _t.click("#add"); _t.type("#item", "eggs"); _t.click("#add"); return [_t.text("#list"), _t.text("#count"), _t.value("#item")];` },
+          { label: "empty is ignored", run: `_t.type("#item", "  "); _t.click("#add"); return [_t.text("#list"), _t.text("#count")];` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li><code>[a, b, c]</code>; index from 0; <code>length</code>; <code>a[a.length - 1]</code> or <code>a.at(-1)</code> is the last.</li>
+        <li>Loop with an index or with <code>for…of</code>; build arrays with <code>push</code>.</li>
+        <li><code>push/pop</code> at the end, <code>unshift/shift</code> at the start; <code>slice</code> copies, <code>splice</code> edits in place.</li>
+        <li><code>sort()</code> sorts as text — use <code>sort((a, b) =&gt; a - b)</code> for numbers. <code>sort</code> and <code>reverse</code> change the array.</li>
+        <li>Arrays are shared by reference; copy with <code>[...a]</code> when you shouldn't change the original.</li>
+        <li><code>map</code>, <code>filter</code>, <code>reduce</code>, <code>find</code>, <code>some</code>, <code>every</code> replace most loops.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>

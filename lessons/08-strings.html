@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>08 · Strings — CSC 227 JS</title>
+  <link rel="stylesheet" href="lesson.css">
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Lesson 8 of 22</div>
+    <h1>08 · Strings</h1>
+    <p class="lead">Text is the most common data there is. Build it, compare it, search it, slice it, and reshape it.</p>
+  </header>
+
+  <p class="lab-cta"><a href="../labs/lab.html?id=lab-08">✏️ Practice this lesson → Lab 08 (3 problems)</a></p>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lesson.js";
+
+    const cells = [
+      { md: `<h2>Strings everywhere</h2>
+      <p>Character-based data — <strong>strings</strong> — is the most common type of data computers process, probably
+      because it's the most common type of data <em>we</em> process: names, messages, addresses, web pages, and
+      everything a user types. A <strong>static</strong> string is written directly in the code
+      (<code>const progName = "PacMan"</code>); a <strong>dynamic</strong> one is built while the program runs — read from an
+      input (<code>document.getElementById("lastName").value</code>) or assembled from pieces
+      (<code>"Lenovo" + "ThinkPad"</code>).</p>
+      <h2>Three kinds of quotes</h2>
+      <p>Double quotes, single quotes, and backticks all make strings, and the results are identical. Pick the one that
+      avoids escaping: a string containing <code>'</code> is easiest in double quotes, and vice versa.</p>` },
+      { title: "Quotes and escapes", code: `
+const d = "quote";
+const s = 'quote';
+const a = \`quote\`;
+console.log(d === s && s === a);
+
+console.log("The dog's name is Rover.");
+console.log('She said "hi".');
+console.log("Escapes: \\"quoted\\", a backslash \\\\, a tab\\tand a\\nnew line");
+` },
+      { md: `<p>Inside any string, a backslash starts an <strong>escape sequence</strong>: <code>\\n</code> new line,
+      <code>\\t</code> tab, <code>\\"</code> and <code>\\'</code> quotes, <code>\\\\</code> a backslash.</p>
+      <h2>Template literals</h2>
+      <p>Backtick strings are <strong>template literals</strong>. They can span several lines, and
+      <code>\${…}</code> drops the value of any expression into the middle of the text — <em>interpolation</em>. They're
+      usually clearer than a chain of <code>+</code>.</p>` },
+      { title: "Interpolation", code: `
+const player = 2;
+const points = 99;
+console.log(\`Player \${player} has \${points} points\`);
+console.log("Player " + player + " has " + points + " points");   // the same, with +
+
+const price = 4.5, qty = 3;
+console.log(\`\${qty} items at $\${price.toFixed(2)} = $\${(price * qty).toFixed(2)}\`);
+console.log(\`Line one
+Line two\`);
+` },
+
+      { md: `<h2>Length and characters</h2>
+      <p>A string is a sequence of characters, numbered from <strong>0</strong>. <code>.length</code> is how many there
+      are; <code>s[i]</code> (or <code>s.charAt(i)</code>) reads one; <code>s.at(-1)</code> counts from the end.</p>` },
+      { title: "Indexing", code: `
+const word = "JavaScript";
+console.log(word.length);
+console.log(word[0], word[4], word[word.length - 1]);
+console.log(word.at(-1), word.at(-2));
+console.log(word[50]);    // past the end: undefined
+` },
+      { md: `<div class="callout warn"><strong>Strings can't be changed in place.</strong> Strings are
+      <em>immutable</em>: <code>word[0] = "j"</code> silently does nothing. Every string method returns a <em>new</em>
+      string and leaves the original alone — so remember to keep the result: <code>name = name.trim();</code></div>` },
+      { title: "Immutability", code: `
+let word = "java";
+word[0] = "J";
+console.log(word);              // still "java"
+word.toUpperCase();
+console.log(word);              // still "java": the result was thrown away
+word = word.toUpperCase();
+console.log(word);              // "JAVA"
+` },
+
+      { md: `<h2>Combining strings</h2>
+      <p><code>+</code> joins strings; <code>+=</code> appends to a variable.</p>` },
+      { title: "Joining", code: `
+const lastName = "Smith";
+const firstName = "John";
+const name = lastName + ", " + firstName;
+console.log(name);
+
+let s = "a";
+s += "bc";
+console.log(s);
+
+let line = "";
+for (let i = 1; i <= 5; i++) {
+  line += i + (i < 5 ? "-" : "");
+}
+console.log(line);
+` },
+
+      { md: `<h2>Comparing strings</h2>
+      <p><code>===</code> is true only for exactly the same characters — case included. <code>&lt;</code> and
+      <code>&gt;</code> compare character by character by their codes, which is alphabetical for same-case letters
+      (but all capitals come before all lowercase letters). For human-friendly sorting, use
+      <code>a.localeCompare(b)</code>, which returns a negative number, zero, or a positive number.</p>` },
+      { title: "Comparisons", code: `
+const l = "abc";
+console.log(l === "abc", l === "ABC");
+console.log(l < "b", l < "a", l > "b", l > "a");
+console.log("apple" < "banana", "Banana" < "apple");
+console.log("apple".localeCompare("banana"), "b".localeCompare("a"), "a".localeCompare("a"));
+console.log("Albert".toLowerCase() === "ALBERT".toLowerCase());  // compare ignoring case
+` },
+
+      { md: `<h2>Searching</h2>
+      <table>
+        <tr><th>Method</th><th>Returns</th></tr>
+        <tr><td><code>s.indexOf(x)</code></td><td>position of the first <code>x</code>, or <code>-1</code> if not found</td></tr>
+        <tr><td><code>s.lastIndexOf(x)</code></td><td>position of the last <code>x</code>, or <code>-1</code></td></tr>
+        <tr><td><code>s.includes(x)</code></td><td><code>true</code> / <code>false</code></td></tr>
+        <tr><td><code>s.startsWith(x)</code>, <code>s.endsWith(x)</code></td><td><code>true</code> / <code>false</code></td></tr>
+      </table>` },
+      { title: "indexOf", code: `
+const l = "abc";
+console.log(l.indexOf("a"));     // 0
+console.log(l.indexOf("abc"));   // 0
+console.log(l.indexOf("bc"));    // 1
+console.log(l.indexOf("xyz"));   // -1
+const sentence = "the cat sat on the mat";
+console.log(sentence.indexOf("the"), sentence.lastIndexOf("the"));
+console.log(sentence.indexOf("at", 6));   // start searching at position 6
+` },
+      { title: "Prefixes, suffixes, includes", code: `
+const l = "abc";
+console.log(l.startsWith("ab"), l.startsWith("a"), l.startsWith(""), l.startsWith("xyz"));
+console.log(l.endsWith("bc"), l.endsWith("c"), l.endsWith("ab"));
+const file = "report-final.PDF";
+console.log(file.toLowerCase().endsWith(".pdf"));
+console.log("hello world".includes("o w"));
+` },
+
+      { md: `<h2>Transforming</h2>
+      <h3>Case and whitespace</h3>` },
+      { title: "Case and trim", code: `
+const l = "aBc";
+console.log(l.toLowerCase(), l.toUpperCase());
+const padded = "   abc       ";
+console.log("[" + padded.trim() + "]");
+console.log("[" + padded.trimStart() + "]", "[" + padded.trimEnd() + "]");
+` },
+      { md: `<h3>Getting a part</h3>
+      <p><code>s.substring(start, end)</code> returns the characters from <code>start</code> up to <em>but not
+      including</em> <code>end</code>; leave out <code>end</code> to go to the end of the string.
+      <code>s.slice(start, end)</code> is the same, but also accepts negative positions counted from the end.</p>` },
+      { title: "substring and slice", code: `
+const l = "the dog...";
+console.log(l.substring(4, 7));    // "dog"
+console.log(l.substring(4));       // "dog..."
+console.log(l.slice(-3));          // "..."
+console.log(l.slice(0, -3));       // "the dog"
+
+const email = "ada@example.com";
+const at = email.indexOf("@");
+console.log("user:", email.slice(0, at), " domain:", email.slice(at + 1));
+` },
+      { md: `<h3>Replacing, splitting, repeating, padding</h3>` },
+      { title: "replace, split and friends", code: `
+const l = "the dog chased the other dog";
+console.log(l.replace("dog", "cat"));      // only the first one
+console.log(l.replaceAll("dog", "cat"));   // every one
+
+const words = "the dog is funny".split(" ");
+console.log(words, words.length);
+console.log("a,b,,c".split(","));
+console.log("abc".split(""));               // into single characters
+console.log(words.join("-"));               // arrays join back into a string
+
+console.log("ab".repeat(3));
+console.log("7".padStart(3, "0"), "7".padEnd(3, "."));
+` },
+
+      { md: `<h2>Chaining</h2>
+      <p>Because each method returns a new string, you can call the next method directly on the result. This is how you
+      shape messy input into something you can compare: here we compare what a user typed to a static string.</p>` },
+      { title: "Normalize, then compare", html: `<input id="name" value="  ALBERT ">
+<button onclick="check()">Check</button>
+<p id="out"></p>`, code: `
+function check() {
+  const userInput = document.getElementById("name").value;
+  const ok = userInput.trim().toLowerCase() === "albert";
+  document.getElementById("out").textContent = ok ? "Welcome back, Albert!" : "Who are you?";
+}
+` },
+      { md: `<div class="callout warn"><strong>Element versus value.</strong> An early version of this example read
+      <code>const userInput = document.getElementById("name");</code> — that's the <em>input element</em>, not its text, so
+      <code>userInput.trim()</code> fails with "userInput.trim is not a function". Strings come from
+      <code>.value</code>.</div>` },
+
+      { md: `<h2>Looping over characters</h2>
+      <p>A <code>for…of</code> loop visits each character in turn. Combine it with an accumulator to count, filter or
+      rebuild strings.</p>` },
+      { title: "Counting and rebuilding", code: `
+function countVowels(text) {
+  let count = 0;
+  for (const ch of text.toLowerCase()) {
+    if ("aeiou".includes(ch)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function reverse(text) {
+  let result = "";
+  for (const ch of text) {
+    result = ch + result;     // put each character in front
+  }
+  return result;
+}
+
+console.log(countVowels("Programming in JavaScript"));
+console.log(reverse("stressed"));
+console.log("stressed".split("").reverse().join(""));   // the same, with array methods
+` },
+      { title: "Index loops", code: `
+const word = "banana";
+for (let i = 0; i < word.length; i++) {
+  console.log(i, word[i]);
+}
+// positions of every "a"
+let positions = "";
+for (let i = 0; i < word.length; i++) {
+  if (word[i] === "a") {
+    positions += i + " ";
+  }
+}
+console.log("a at:", positions.trim());
+` },
+
+      { md: `<h2>Strings and numbers</h2>` },
+      { title: "Conversions", code: `
+const n = 42;
+console.log(String(n), n.toString(), n + "");
+console.log((3.14159).toFixed(2), (1234.5).toLocaleString("en-US"));
+console.log(Number("42"), Number(" 42 "), Number("4 2"));
+console.log("5" * "2", "5" + 2, 5 + 2 + "1", "1" + 5 + 2);
+` },
+
+      { md: `<h2>Challenges</h2>` },
+      { title: "Initials", prompt: `Write <code>initials(first, last)</code> returning the capitalised initials with
+        dots: <code>initials("ada", "lovelace")</code> is <code>"A.L."</code>.`,
+        solution: `function initials(first, last) {\n  return first[0].toUpperCase() + "." + last[0].toUpperCase() + ".";\n}`,
+        checks: [{ expr: `initials("ada", "lovelace")` }, { expr: `initials("Alan", "Turing")` }] },
+      { title: "Capitalize", prompt: `Write <code>capitalize(word)</code>: first letter upper case, the rest lower case.
+        <code>capitalize("jAVAscript")</code> is <code>"Javascript"</code>. An empty string stays empty.`,
+        solution: `function capitalize(word) {\n  if (word === "") {\n    return "";\n  }\n  return word[0].toUpperCase() + word.slice(1).toLowerCase();\n}`,
+        checks: [{ expr: `capitalize("jAVAscript")` }, { expr: `capitalize("a")` }, { expr: `capitalize("")` }, { expr: `capitalize("HELLO")` }] },
+      { title: "Count a letter", prompt: `Write <code>countChar(text, ch)</code> returning how many times the single
+        character <code>ch</code> appears in <code>text</code>, ignoring case.`,
+        solution: `function countChar(text, ch) {\n  let count = 0;\n  const target = ch.toLowerCase();\n  for (const c of text.toLowerCase()) {\n    if (c === target) {\n      count++;\n    }\n  }\n  return count;\n}`,
+        checks: [{ expr: `countChar("Mississippi", "s")` }, { expr: `countChar("Banana", "A")` }, { expr: `countChar("xyz", "a")` }] },
+      { title: "Palindromes", prompt: `Write <code>isPalindrome(text)</code>: true when the text reads the same
+        backwards, ignoring case and spaces. <code>isPalindrome("Never odd or even")</code> is <code>true</code>.`,
+        solution: `function isPalindrome(text) {\n  const clean = text.toLowerCase().replaceAll(" ", "");\n  let reversed = "";\n  for (const ch of clean) {\n    reversed = ch + reversed;\n  }\n  return clean === reversed;\n}`,
+        hint: `Clean first (lower-case, remove spaces with <code>replaceAll(" ", "")</code>), then compare with the
+        reversed cleaned string.`,
+        checks: [{ expr: `isPalindrome("racecar")` }, { expr: `isPalindrome("Never odd or even")` }, { expr: `isPalindrome("hello")` }, { expr: `isPalindrome("A")` }] },
+      { title: "Title Case", prompt: `Write <code>titleCase(sentence)</code> that capitalises the first letter of every
+        word and lower-cases the rest: <code>"the QUICK brown fox"</code> → <code>"The Quick Brown Fox"</code>. Words
+        are separated by single spaces.`,
+        solution: `function titleCase(sentence) {\n  const words = sentence.split(" ");\n  let result = "";\n  for (const w of words) {\n    if (result !== "") {\n      result += " ";\n    }\n    result += w[0].toUpperCase() + w.slice(1).toLowerCase();\n  }\n  return result;\n}`,
+        hint: `<code>split(" ")</code> gives you the words; build the result with a loop, adding a space between words.`,
+        checks: [{ expr: `titleCase("the QUICK brown fox")` }, { expr: `titleCase("hello")` }, { expr: `titleCase("a b c")` }] },
+      { title: "Hide an email", prompt: `Write <code>maskEmail(email)</code> that keeps the first character of the name
+        and the whole domain, and replaces the rest of the name with <code>*</code>:
+        <code>maskEmail("albert@example.com")</code> is <code>"a*****@example.com"</code>.`,
+        solution: `function maskEmail(email) {\n  const at = email.indexOf("@");\n  return email[0] + "*".repeat(at - 1) + email.slice(at);\n}`,
+        checks: [{ expr: `maskEmail("albert@example.com")` }, { expr: `maskEmail("jo@x.org")` }, { expr: `maskEmail("a@b.c")` }] },
+      { title: "URL slug", prompt: `Write <code>slugify(title)</code>: trim it, lower-case it, and replace every space
+        with <code>-</code>. <code>slugify("  My First Blog Post ")</code> is <code>"my-first-blog-post"</code>.`,
+        solution: `function slugify(title) {\n  return title.trim().toLowerCase().replaceAll(" ", "-");\n}`,
+        checks: [{ expr: `slugify("  My First Blog Post ")` }, { expr: `slugify("Hello")` }, { expr: `slugify("A B C")` }] },
+      { title: "Name check form", prompt: `Write <code>login()</code> (the button calls it): if the text in
+        <code>#user</code>, ignoring case and surrounding spaces, is <code>admin</code>, put <code>Access granted</code>
+        in <code>#status</code>; otherwise <code>Access denied for NAME</code> where NAME is what they typed, trimmed.`,
+        html: `<input id="user"> <button onclick="login()">Log in</button>
+<p id="status"></p>`,
+        starter: `function login() {\n\n}`,
+        solution: `function login() {\n  const typed = document.getElementById("user").value.trim();\n  const status = document.getElementById("status");\n  if (typed.toLowerCase() === "admin") {\n    status.textContent = "Access granted";\n  } else {\n    status.textContent = "Access denied for " + typed;\n  }\n}`,
+        checks: [
+          { label: '"  ADMIN "', run: `_t.type("#user", "  ADMIN "); _t.click("button"); return _t.text("#status");` },
+          { label: '"bob "', run: `_t.type("#user", "bob "); _t.click("button"); return _t.text("#status");` },
+        ] },
+
+      { md: `<h2>Summary</h2><div class="callout tip"><ul>
+        <li>Three quote styles; backtick template literals add multi-line text and <code>\${expr}</code> interpolation.</li>
+        <li>Characters are indexed from 0; <code>.length</code>, <code>s[i]</code>, <code>s.at(-1)</code>. Strings are immutable — keep method results.</li>
+        <li>Compare with <code>===</code> (exact) — normalise with <code>trim()</code> and <code>toLowerCase()</code> first when case shouldn't matter.</li>
+        <li>Search: <code>indexOf</code>, <code>includes</code>, <code>startsWith</code>, <code>endsWith</code>.</li>
+        <li>Transform: <code>substring</code>/<code>slice</code>, <code>replace</code>/<code>replaceAll</code>, <code>split</code>, <code>repeat</code>, <code>padStart</code>.</li>
+        <li>Loop over characters with <code>for…of</code>; chain methods to reshape input.</li>
+      </ul></div>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="../site-nav.js"></script>
+</body>
+</html>
