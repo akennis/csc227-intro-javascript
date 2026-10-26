@@ -324,7 +324,23 @@ export function createChallenge(cell, { mount, badge, saveKey, scope, label, onG
     const shown = await runCode(src, { ...frameOpts(cell), mount: pageSlot, keep: isFrame, onLog: con.add });
     frame = shown.frame;
     con.finish();
-    const [mine, ref] = await Promise.all([runCode(src, { ...frameOpts(cell), checks }), reference()]);
+    // Console output from inside the tests (e.g. a console.log in a function
+    // only the tests call), grouped under each test's label. Lines before the
+    // first test are the program's top level again — already shown above.
+    const testLogs = [];
+    const collect = (entry) => {
+      if (entry.level === "test") testLogs.push({ label: entry.text, lines: [] });
+      else if (testLogs.length && entry.level !== "clear") testLogs[testLogs.length - 1].lines.push(entry);
+    };
+    const [mine, ref] = await Promise.all([runCode(src, { ...frameOpts(cell), checks, onLog: collect }), reference()]);
+    const withOutput = testLogs.filter(t => t.lines.length);
+    if (withOutput.length) {
+      con.add({ level: "section", text: "Output while the tests ran" });
+      for (const t of withOutput) {
+        con.add({ level: "test", text: t.label });
+        t.lines.forEach(con.add);
+      }
+    }
     const g = grade(mine, ref, checks, { logs: !!cell.logs });
     paintTests(g.items);
     if (ref.errors.length) console.warn(`[lesson] solution for ${label} reported errors:`, ref.errors);

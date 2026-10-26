@@ -297,6 +297,8 @@ export function sandboxPrelude(cfg, post) {
   // posted back canonicalized for comparison plus formatted for display.
   G.__jsrRunChecks = async function (fns) {
     for (let i = 0; i < fns.length; i++) {
+      // Marks where this check's console output begins (display only).
+      post({ type: "checkStart", i });
       try {
         const v = await fns[i]();
         post({ type: "check", i, ok: true, value: canon(v), shown: showNested(v) });
@@ -771,7 +773,8 @@ export function disposeFrame(frame) {
  * @param {string[]} [opts.libs=[]]              frame only: libraries from LIBS, e.g. ["react"]
  * @param {(entry:{level:string,text:string}) => void} [opts.onLog]  streamed console lines;
  *   level is "log" | "warn" | "error" (console calls), "exception" (thrown
- *   errors, syntax errors, guard trips, timeouts), or "clear"
+ *   errors, syntax errors, guard trips, timeouts), "clear", or "test" (a check is
+ *   starting; `text` is its label, `i` its index)
  * @returns {Promise<{logs:Array, errors:string[], checks:Array, timedOut:boolean, frame:HTMLIFrameElement|null}>}
  */
 export async function runCode(src, {
@@ -799,6 +802,9 @@ export async function runCode(src, {
     } else if (m.type === "error") {
       result.errors.push(m.text);
       onLog({ level: "exception", text: m.text });
+    } else if (m.type === "checkStart") {
+      const c = checks[m.i] || {};
+      onLog({ level: "test", i: m.i, text: c.label || c.expr || `test ${m.i + 1}` });
     } else if (m.type === "storage") {
       onStorage(m.data);
     } else if (m.type === "check") {

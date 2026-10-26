@@ -107,6 +107,9 @@ pre.code code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 .con-warn{color:#f5c76b;} .con-error{color:#ff8a80;}
 .con-exception{color:#ff8a80;font-weight:600;}
 .con-request{color:#8ecbff;}
+.con-section{color:#80838c;font-style:italic;margin-top:.35rem;border-top:1px dashed #4a4d55;padding-top:.25rem;}
+.con-test{color:#8ecbff;}
+.con-test::before{content:"▸ test: ";color:#80838c;}
 .live-toggle{font-size:.78rem;color:var(--muted);display:flex;gap:.3rem;align-items:center;}
 .con-exception::before{content:"✖ ";}
 .con-empty{color:#80838c;font-style:italic;}
