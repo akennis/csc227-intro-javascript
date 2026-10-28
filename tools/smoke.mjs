@@ -62,7 +62,7 @@ async function defaultPages() {
     for (const f of fs.readdirSync(labDir).filter(f => /^lab-\d\d\.js$/.test(f)).sort())
       labs.push(`labs/lab.html?id=${f.slice(0, -3)}`);
   }
-  return ["index.html", "reference.html", "playground.html", ...lessons, ...labs];
+  return ["index.html", "how-to-use.html", "reference.html", "playground.html", ...lessons, ...labs];
 }
 
 async function checkPage(browser, base, page) {

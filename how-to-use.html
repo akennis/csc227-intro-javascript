@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to use this site — CSC 227 JS</title>
+  <link rel="stylesheet" href="lessons/lesson.css">
+  <style>
+    .guide-toc{max-width:52rem;margin:1rem auto 0;padding:0 1.25rem;display:flex;flex-wrap:wrap;
+      gap:.35rem .9rem;font-size:.9rem;}
+    .guide-toc a{color:var(--accent);text-decoration:none;}
+    .guide-toc a:hover{text-decoration:underline;}
+    .md table td:first-child{white-space:nowrap;}
+    .md kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82em;
+      background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:.05em .35em;}
+    @media (max-width:640px){.md table td:first-child{white-space:normal;}}
+  </style>
+</head>
+<body>
+  <header class="course">
+    <div class="crumb">CSC 227 · Introduction to JavaScript</div>
+    <h1>How to use this site</h1>
+    <p class="lead">How the course is organised, how the live examples and challenges on each page work,
+      and how labs are checked, submitted and graded.</p>
+  </header>
+
+  <nav class="guide-toc" aria-label="On this page">
+    <a href="#structure">Course structure</a><a href="#pages">Lesson pages</a><a href="#examples">Examples</a>
+    <a href="#challenges">Challenges</a><a href="#saving">Saving &amp; resetting</a><a href="#labs">Labs</a>
+    <a href="#submitting">Submitting</a><a href="#grading">Grading</a><a href="#tips">Tips</a>
+  </nav>
+  <main id="notebook"></main>
+
+  <script type="module">
+    import { renderNotebook } from "./lessons/lesson.js";
+
+    const cells = [
+      { md: `<h2 id="structure">Course structure</h2>
+      <p>The course is <strong>22 lessons</strong> in four parts, listed on the <a href="index.html">home page</a>:</p>
+      <ol>
+        <li><strong>Foundations</strong> (lessons 1–6) — Git and GitHub, values, variables, functions, the console, decisions and loops.</li>
+        <li><strong>Programs in the page &amp; data</strong> (7–12) — connecting JavaScript to HTML, then strings, arrays, objects and closures.</li>
+        <li><strong>The DOM, events &amp; functions</strong> (13–17) — changing the page from code, responding to the user, errors, recursion and arrow functions.</li>
+        <li><strong>Talking to the world</strong> (18–22) — web APIs, <code>async</code>/<code>await</code>, localStorage, Node.js and React.</li>
+      </ol>
+      <p>Each lesson builds on the ones before it, so work through them in order. Every lesson has a matching
+        <strong>lab</strong> with the same number (lesson 9 ↔ Lab 09), linked from the top of the lesson page.</p>
+      <p>Two more pages are useful all the way through:</p>
+      <ul>
+        <li>The <a href="reference.html">Reference</a> lists the syntax and built-in functions the course covers, each section linked to the lesson that teaches it.</li>
+        <li>The <a href="playground.html">Playground</a> is a blank editor with a console, plus an optional page of your own HTML, for trying out anything you like.</li>
+      </ul>
+      <p>The bar across the top of every page takes you <strong>Home</strong>, to the <strong>Lessons</strong>,
+        <strong>Labs</strong>, <strong>Reference</strong> and <strong>Playground</strong>, and back to this guide. On a lesson
+        or lab, the <strong>Next →</strong> link on the right (and the links at the bottom of the page) move to the
+        next one in order.</p>
+      <p>Nothing needs installing. Everything runs in your browser — a recent Chrome, Edge, Firefox or Safari
+        on a laptop or desktop works best.</p>
+
+      <h2 id="pages">Lesson pages</h2>
+      <p>A lesson reads like a notebook: explanations, then code you can run, then code you write. It mixes four
+        kinds of block:</p>
+      <ul>
+        <li><strong>Explanations</strong> — plain prose and short code listings that introduce an idea.</li>
+        <li><strong>Examples</strong> (labelled <em>Example 1</em>, <em>Example 2</em>, …) — working programs you can edit and run.</li>
+        <li><strong>Callouts</strong> — boxed notes. Orange ones warn about common mistakes; green ones are tips.</li>
+        <li><strong>Challenges</strong> (labelled <em>Challenge 1</em>, …) — short exercises that check your code automatically.</li>
+      </ul>
+      <div class="callout warn"><strong>Common mistake:</strong> boxes like this one point out the errors most beginners make with the topic at hand. Read them — they save a lot of debugging.</div>
+      <div class="callout tip"><strong>Tip:</strong> green boxes are shortcuts and good habits.</div>
+      <p>Lessons are long on purpose: there are usually several examples per idea, from the simplest possible
+        case to something realistic. Reading the explanation, running the examples and then trying the challenges
+        is the intended rhythm.</p>
+
+      <h2 id="examples">Examples</h2>
+      <p>Every example is real JavaScript in an editor. It runs once when the page loads, and its output appears in
+        the <strong>Console</strong> panel underneath — exactly what <code>console.log</code> would print in the
+        browser's developer tools. You can change anything and run it again:</p>
+      <table>
+        <tr><td><strong>▶ Run</strong> or <kbd>Ctrl</kbd>+<kbd>Enter</kbd> (<kbd>⌘</kbd>+<kbd>Enter</kbd> on a Mac)</td><td>Run the code in the editor.</td></tr>
+        <tr><td><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Indent / un-indent by two spaces.</td></tr>
+        <tr><td><strong>Restore</strong></td><td>Put the original example back (asks first).</td></tr>
+      </table>
+      <p>Try it on the example below: change the name, or add another <code>console.log</code>, then run it.</p>` },
+
+      { title: "Try editing me",
+        code: `
+const name = "Ada";
+const year = 2026;
+console.log(\`Hello, \${name}!\`);
+console.log(\`Welcome to CSC 227 in \${year}.\`);
+` },
+
+      { md: `<p>Some things you will see in the console:</p>
+      <ul>
+        <li><strong>Errors</strong> show in red with the line number they happened on, in your own numbering —
+          your code stops there, but the page does not break. Some examples make an error on purpose to show
+          what it looks like.</li>
+        <li><strong>Endless loops</strong> are stopped after a few seconds with a message saying so, instead of
+          freezing the page. Fix the loop and run again.</li>
+      </ul>
+      <p><strong>Examples with a page.</strong> From lesson 7 on, many examples work with a web page. These show
+        three panels: <strong>Page HTML</strong> (the page's markup, read-only, so you can see the <code>id</code>s and
+        <code>onclick</code> handlers the code relies on), <strong>JavaScript</strong> (the editor), and under the console,
+        <strong>Page</strong> — the live page itself. You can click its buttons and type into its inputs; anything
+        your handlers log keeps appearing in the console. The page runs in a sealed sandbox, so it cannot affect the
+        course site or anything else in your browser.</p>
+      <p><strong>Other special examples.</strong> A few lessons add extras: examples that call web APIs use a
+        built-in pretend server so they always give the same answer (some have a <em>use the real API</em> box to
+        try the real one); localStorage examples remember their data between runs and reloads and have a
+        <strong>Clear saved data</strong> button; Node.js examples show the responses of a simulated web server.</p>
+
+      <h2 id="challenges">Challenges</h2>
+      <p>A challenge states a task, gives you an editor (sometimes with starter code), and checks your answer.
+        Press <strong>▶ Run &amp; check</strong> (or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>):</p>
+      <ol>
+        <li>Your code runs once normally — its output appears in the <strong>Console</strong> (and the
+          <strong>Page</strong>, for page challenges).</li>
+        <li>Then a set of <strong>tests</strong> run against your code — calling your functions, reading your
+          variables, typing into and clicking on the page — and the same tests run against a hidden model solution.</li>
+        <li>Each test in the <strong>Tests</strong> list turns ✓ when your result matches the model's, or ✗ with
+          <em>got</em> (yours) and <em>expected</em> (the model's) so you can see the difference.</li>
+      </ol>
+      <p>When every test passes the challenge says <strong>✓ All tests pass!</strong> Anything your code logs while the
+        tests run is shown in the console under <em>Output while the tests ran</em>, grouped by test — handy for debugging.</p>
+      <ul>
+        <li><strong>Use the exact names in the prompt.</strong> The tests look for the function or variable the
+          prompt names — <code>cToF</code> is not <code>ctof</code> or <code>convert</code>.</li>
+        <li><strong>Return versus log.</strong> If the prompt asks a function to <em>return</em> a value, logging it
+          is not enough, and vice versa.</li>
+        <li><strong>Hints.</strong> Some challenges have a <strong>Hint</strong> you can open. Try first; peek when stuck.</li>
+        <li>Challenges are practice: they are not graded, and you can run them as often as you like.</li>
+      </ul>
+      <p>Try this one. Write the function, run it, and watch the tests.</p>` },
+
+      { title: "A first challenge",
+        prompt: `Write a function <code>double(n)</code> that <strong>returns</strong> twice the number it is given.`,
+        starter: `
+function double(n) {
+  // your code here
+}
+`,
+        hint: `Use <code>return</code> followed by an expression that multiplies <code>n</code> by 2.`,
+        solution: `
+function double(n) {
+  return n * 2;
+}
+`,
+        checks: [
+          { expr: "double(4)" },
+          { expr: "double(0)" },
+          { expr: "double(-2.5)" },
+        ] },
+
+      { md: `<h2 id="saving">Saving &amp; resetting</h2>
+      <p>Everything you type in an editor is <strong>saved automatically</strong> in this browser as you type. Come
+        back tomorrow and your edits are still there — on this device and in this browser only. Work does not follow
+        you to another computer or browser, and clearing your browser's site data erases it.</p>
+      <ul>
+        <li><strong>Restore</strong> (examples) puts the original example back.</li>
+        <li><strong>Reset</strong> (challenges and lab problems) puts the starter code back.</li>
+      </ul>
+      <p>Both ask you to confirm with <strong>Erase my code</strong>, because they replace what is in the editor.</p>
+      <div class="callout warn"><strong>Lab work lives in your browser until you submit it.</strong> Submit each lab
+        when you finish it, rather than leaving it in the page. If you ever erase or lose work by mistake, tell your
+        instructor before doing anything else in that browser.</div>
+
+      <h2 id="labs">Labs</h2>
+      <p>Each lesson has a graded lab (see the <a href="labs/index.html">list of labs</a>, or the <em>✏️ Practice this
+        lesson</em> link at the top of each lesson). A lab is three problems — four for the two DOM labs — that build from
+        a warm-up to a small program, worth 10 points each.</p>
+      <p>A lab problem works exactly like a challenge: a prompt, an editor, <strong>▶ Run &amp; check</strong>, and a
+        tests list. The bar at the top of the lab keeps a running total — <em>Passing in browser: 2 / 3 problems · 20 / 30 pts</em> —
+        so you know where you stand. Lab prompts are more exact than challenge prompts: they name the functions and variables
+        you must create, and the tests read exactly those names.</p>
+      <p>A lab may use anything taught up to and including its lesson.</p>
+
+      <h2 id="submitting">Submitting a lab</h2>
+      <p>Labs are submitted as a <strong>pull request</strong> on GitHub — the workflow taught in
+        <a href="lessons/01-getting-started.html">lesson 1</a>. Once, at the start of the course, you create your own
+        repository from the course's <code>student-template</code>, fill in <code>student.json</code>, and give your
+        instructor the repository's URL. Then, for each lab:</p>
+      <ol>
+        <li>Solve the problems until their tests pass (or as far as you can get — partial work is welcome).</li>
+        <li>Press <strong>📋 Copy submission</strong> at the top of the lab. This copies all of your problems as one file.</li>
+        <li>In your repository, start a branch from an up-to-date <code>main</code>, e.g. <code>git checkout -b lab-02</code>.</li>
+        <li>Save the copied text as <code>submissions/lab-02.js</code> (the lab id is shown at the top of the lab page).</li>
+        <li>Commit, push, and open a pull request; add your instructor as a reviewer.</li>
+      </ol>
+      <div class="callout warn"><strong>Don't edit the markers.</strong> The copied file has header lines and
+        <code>// ===== problem N: … =====</code> / <code>// ===== end problem N =====</code> lines around each problem.
+        The grader uses them to find your answers, so keep them exactly as they are. To change an answer, fix it on the
+        lab page and copy the submission again.</div>
+      <p>The template repository's README has the exact Git commands for every step, including how to update a pull
+        request after review.</p>
+
+      <h2 id="grading">How labs are graded</h2>
+      <ul>
+        <li><strong>The ✓ on the lab page is practice.</strong> The grade that counts comes from your instructor
+          re-running the <em>same tests</em> on the file in your pull request.</li>
+        <li><strong>All or nothing per problem.</strong> A problem earns its points only when every one of its tests
+          passes. A problem that passes on the page will pass when graded, as long as you submitted the same code.</li>
+        <li><strong>Endless loops and crashes</strong> score zero for that problem only; the rest of the lab is still graded.</li>
+        <li><strong>Code review.</strong> Your instructor also reads your code on the pull request and comments —
+          correctness first, then structure, then style. Reply to each comment: make the change, or explain why you
+          disagree. Merge the pull request once it is approved.</li>
+      </ul>
+
+      <h2 id="tips">Tips</h2>
+      <ul>
+        <li><strong>Read the error.</strong> The console tells you what went wrong and on which line. Lesson 4 covers reading errors and using the debugger.</li>
+        <li><strong>Log as you go.</strong> Add <code>console.log</code> lines to see what your variables hold; remove them when you're done.</li>
+        <li><strong>Change the examples.</strong> Break them on purpose and predict what will happen before you press ▶ — it is the fastest way to learn.</li>
+        <li><strong>Use the browser's developer tools too</strong> (<kbd>F12</kbd>): everything logged on these pages also appears in the real DevTools console.</li>
+        <li><strong>Use the Playground</strong> for anything that doesn't fit an example — a blank editor, with an optional page.</li>
+      </ul>
+      <p>Ready? Start with <a href="lessons/01-getting-started.html">Lesson 1 · Getting Started</a>.</p>` },
+    ];
+
+    renderNotebook(cells);
+  </script>
+
+  <script type="module" src="./site-nav.js"></script>
+</body>
+</html>

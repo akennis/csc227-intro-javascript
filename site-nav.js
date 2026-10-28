@@ -7,7 +7,7 @@
  *
  * and gets, with no other markup or stylesheet:
  *
- *   - a sticky navbar: Home · Lessons · Labs · Reference · Playground on the left, Next on the right;
+ *   - a sticky navbar: Home · Lessons · Labs · Reference · Playground · How to use on the left, Next on the right;
  *   - a bottom prev/next pager, generated from the same data.
  *
  * All links are resolved against this module's own URL (`import.meta.url`), so
@@ -75,6 +75,12 @@ const SECTIONS = [
       ["playground.html", "Playground"],
     ],
   },
+  {
+    id: "guide",
+    pages: [
+      ["how-to-use.html", "How to use this site"],
+    ],
+  },
 ];
 
 /**
@@ -89,6 +95,7 @@ const PRIMARY = [
   { href: "labs/index.html", label: "Labs", section: "labs", prefix: "labs/" },
   { href: "reference.html", label: "Reference", section: "reference" },
   { href: "playground.html", label: "Playground", section: "tools" },
+  { href: "how-to-use.html", label: "How to use", section: "guide" },
 ];
 
 // ─────────────────────────── LOCATION ───────────────────────────
@@ -144,7 +151,7 @@ const CSS = `
 /* keep in-page anchors clear of the sticky bar */
 :target{scroll-margin-top:4rem;}
 @media (max-width:520px){
-  .site-nav-in{gap:.9rem;padding:.55rem .9rem;font-size:.86rem;}
+  .site-nav-in{gap:.3rem .9rem;padding:.55rem .9rem;font-size:.86rem;flex-wrap:wrap;}
 }
 `;
 

@@ -26,7 +26,8 @@ teacher tools only — the site itself must keep working with no `node_modules`.
 | `lessons/lesson.css` | All lesson/lab styling (shared by `labs/`). |
 | `lessons/NN-*.html` | The 22 lessons (see `backlog.md` lesson map; lessons 13–14 are DOM I / DOM II, each with a 4-problem lab). `sandbox-test.html` is an off-map dev page covering every misbehaviour case. |
 | `labs/` | Graded labs: generated `lab-NN.js` manifests, `index.js`, generic `lab.html?id=` + `lab.js`, static `index.html`. |
-| `tools/` | `smoke.mjs` (headless check of every page), `gen-labs.js`, `seal.js`, `grade.js` + `grade-worker.js`. |
+| `tools/` | `smoke.mjs` (headless check of every page), `gen-labs.js`, `seal.js`, `grade.js` + `grade-worker.js`, `llm-review.js` (optional LLM critique). |
+| `how-to-use.html` | Student guide: course structure, examples/challenges, saving, labs, submitting, grading (one live demo example + challenge). Keep it in step with UI labels and lab rules. |
 | `site-nav.js` | Navbar + pager; `SECTIONS` is the **single source of page order**. |
 | `code-backup.js` | Reset safety net (`js227-backup:` localStorage slots, `?recover=1`, `jsBackups` console helper). |
 | `student-template/` | Starter repo students copy for lab submissions. |
@@ -134,6 +135,12 @@ Lesson editors autosave to `js227-lesson:<slug>:ex<n>|ch<n>` (labs: `js227-lab:<
   declarations and inline `onclick` handlers.
 - **Timeouts.** Each graded problem runs in a `worker_threads` Worker; the clock
   starts at its `{ready}` message (jsdom takes seconds to load from `/mnt/c`).
+- **LLM review (advisory).** `grade.js --llm-provider anthropic` (key in
+  `ANTHROPIC_API_KEY_CSC227`) or `--llm-endpoint <url> --llm-model <m>` (any
+  OpenAI-compatible server) prints a per-problem prose critique to stdout via
+  `tools/llm-review.js`; it never changes points, and failures only log to stderr.
+  Dependency-free (global `fetch`), mirroring the Karel repo's reviewer. The
+  system prompt encodes this course's style rules — update it if they change.
 - Pilot-verified: `node tools/grade.js --file <copied submission>` scores 30/30 for
   a browser-solved lab-02; a looping/incorrect submission scores 0 without hanging.
 
