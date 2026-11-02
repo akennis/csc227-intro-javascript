@@ -4,8 +4,8 @@ export default {
   title: "The DOM II",
   lesson: "14-dom-2",
   lessonTitle: "The DOM II: Building & Navigating the Tree",
-  intro: `<p>Four problems on building and restructuring the page: creating elements from data, nesting them, walking the
-    tree, and re-rendering when the data changes. Build elements with <code>createElement</code> and <code>textContent</code>
+  intro: `<p>Three problems on building the page from data: appending elements to a list, replacing a container's contents
+    with nested elements, and walking the tree to build a nested table of contents. Build elements with <code>createElement</code> and <code>textContent</code>
     — data may contain characters like <code>&lt;</code> that must stay text.</p>`,
   problems: [
     {
@@ -143,107 +143,6 @@ export default {
         { label: "return value", run: `return buildToc();` },
         { label: "the TOC", run: `buildToc(); return _t.el("#toc").innerHTML;` },
         { label: "calling twice doesn't duplicate", run: `buildToc(); buildToc(); return _t.$$("#toc li").length;` },
-      ],
-    },
-    {
-      key: "challenge",
-      title: "Sortable table",
-      points: 10,
-      prompt: `The table's header cells name the columns with <code>data-key</code>. Using the given <code>data</code> array:
-        <ul>
-          <li><code>renderRows(rows)</code> — empty the <code>tbody</code> and add one <code>&lt;tr&gt;</code> per row object, with one
-          <code>&lt;td&gt;</code> per column <strong>in the order of the header cells</strong> (read the keys from the
-          <code>th</code>s' <code>data-key</code>, don't hard-code them).</li>
-          <li><code>sortBy(key)</code> — sort <code>data</code> by that column and re-render. Sorting the same column twice in a row
-          flips between ascending and descending; a new column starts ascending. Numbers sort numerically, strings with
-          <code>localeCompare</code>. The sorted column's <code>th</code> gets the class <code>asc</code> or <code>desc</code>; all
-          other <code>th</code>s have neither.</li>
-          <li>Clicking a header cell calls <code>sortBy</code> with its key (one listener on the header row is enough). Render the
-          rows once at start-up, unsorted.</li>
-        </ul>`,
-      html: `
-        <style>th { cursor: pointer; } th.asc::after { content: " ▲"; } th.desc::after { content: " ▼"; }</style>
-        <table id="grades" border="1">
-          <thead><tr><th data-key="name">Name</th><th data-key="score">Score</th><th data-key="year">Year</th></tr></thead>
-          <tbody></tbody>
-        </table>`,
-      hint: `Keep the current sort key and direction in variables outside the functions. After sorting, call
-        <code>renderRows(data)</code>, then update the classes on every <code>th</code>.`,
-      starter: `
-        const data = [
-          { name: "Grace", score: 88, year: 3 },
-          { name: "Ada", score: 95, year: 2 },
-          { name: "Alan", score: 72, year: 4 },
-          { name: "Edsger", score: 88, year: 1 },
-        ];
-
-        function renderRows(rows) {
-
-        }
-
-        function sortBy(key) {
-
-        }
-      `,
-      solution: `
-        const data = [
-          { name: "Grace", score: 88, year: 3 },
-          { name: "Ada", score: 95, year: 2 },
-          { name: "Alan", score: 72, year: 4 },
-          { name: "Edsger", score: 88, year: 1 },
-        ];
-
-        let sortKey = null;
-        let ascending = true;
-
-        function columnKeys() {
-          return [...document.querySelectorAll("#grades thead th")].map(th => th.dataset.key);
-        }
-
-        function renderRows(rows) {
-          const tbody = document.querySelector("#grades tbody");
-          tbody.replaceChildren();
-          const keys = columnKeys();
-          for (const row of rows) {
-            const tr = document.createElement("tr");
-            for (const key of keys) {
-              const td = document.createElement("td");
-              td.textContent = row[key];
-              tr.append(td);
-            }
-            tbody.append(tr);
-          }
-        }
-
-        function sortBy(key) {
-          ascending = key === sortKey ? !ascending : true;
-          sortKey = key;
-          data.sort((a, b) => {
-            const x = a[key], y = b[key];
-            const cmp = typeof x === "number" ? x - y : String(x).localeCompare(String(y));
-            return ascending ? cmp : -cmp;
-          });
-          renderRows(data);
-          for (const th of document.querySelectorAll("#grades thead th")) {
-            th.classList.toggle("asc", th.dataset.key === key && ascending);
-            th.classList.toggle("desc", th.dataset.key === key && !ascending);
-          }
-        }
-
-        document.querySelector("#grades thead tr").addEventListener("click", e => {
-          const th = e.target.closest("th");
-          if (th) {
-            sortBy(th.dataset.key);
-          }
-        });
-
-        renderRows(data);
-      `,
-      checks: [
-        { label: "initial render", run: `return _t.el("#grades tbody").innerHTML;` },
-        { label: "click Name", run: `_t.$$("#grades th")[0].click(); return [_t.$$("#grades tbody tr").map(tr => tr.firstElementChild.textContent), _t.$$("#grades th").map(th => th.className)];` },
-        { label: "click Score twice", run: `const th = _t.$$("#grades th")[1]; th.click(); const asc = _t.$$("#grades tbody tr td:nth-child(2)").map(td => td.textContent); th.click(); return [asc, _t.$$("#grades tbody tr td:nth-child(2)").map(td => td.textContent), _t.$$("#grades th").map(th => th.className)];` },
-        { label: "renderRows uses the header order", run: `const head = _t.el("#grades thead tr"); head.prepend(head.lastElementChild); renderRows([{ name: "Zed", score: 1, year: 9 }]); return _t.el("#grades tbody").innerHTML;` },
       ],
     },
   ],

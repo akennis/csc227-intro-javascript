@@ -183,7 +183,7 @@ DOM's relationship to HTML, JavaScript and the browser, a separate 4-problem lab
 - [x] L14 DOM II (insertion positions, text nodes, move vs clone, template,
       CRUD, render pattern, innerHTML pitfalls, fragments & layout thrash,
       measuring, rAF, MutationObserver, traversal, recursive outline, traversal
-      tool; 7 ch) + Lab 14 (add items / cards / nested TOC / sortable table).
+      tool; 7 ch) + Lab 14 (add items / cards / nested TOC) — sortable table problem removed 2026-11-02.
 - [x] Renumbered old 14–21 → 15–22 (files, lab ids, crumbs, links, prose refs).
 
 ## Group 7 — Polish  ☐

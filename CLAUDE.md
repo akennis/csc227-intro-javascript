@@ -24,7 +24,7 @@ teacher tools only — the site itself must keep working with no `node_modules`.
 | `jsrunner.js` | The runtime: `runCode` (worker / frame runners), `prepare` (loop-guard instrumentation), `sandboxPrelude`, `grade`/`sameValue`, `sealSolution`/`unsealSolution`. |
 | `lessons/lesson.js` | `renderNotebook(cells)`, the highlighted editor (`makeEditor`), console panel, autosave. |
 | `lessons/lesson.css` | All lesson/lab styling (shared by `labs/`). |
-| `lessons/NN-*.html` | The 22 lessons (see `backlog.md` lesson map; lessons 13–14 are DOM I / DOM II, each with a 4-problem lab). `sandbox-test.html` is an off-map dev page covering every misbehaviour case. |
+| `lessons/NN-*.html` | The 22 lessons (see `backlog.md` lesson map; lessons 13–14 are DOM I / DOM II; lab 13 has 4 problems, lab 14 has 3). `sandbox-test.html` is an off-map dev page covering every misbehaviour case. |
 | `labs/` | Graded labs: generated `lab-NN.js` manifests, `index.js`, generic `lab.html?id=` + `lab.js`, static `index.html`. |
 | `tools/` | `smoke.mjs` (headless check of every page), `gen-labs.js`, `seal.js`, `grade.js` + `grade-worker.js`, `llm-review.js` (optional LLM critique). |
 | `how-to-use.html` | Student guide: course structure, examples/challenges, saving, labs, submitting, grading (one live demo example + challenge). Keep it in step with UI labels and lab rules. |

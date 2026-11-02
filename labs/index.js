@@ -14,7 +14,7 @@ export const labs = [
   { id: "lab-11", title: "Modeling Systems", lesson: "11-modeling", problems: 3 },
   { id: "lab-12", title: "Closures", lesson: "12-closures", problems: 3 },
   { id: "lab-13", title: "The DOM I", lesson: "13-dom-1", problems: 4 },
-  { id: "lab-14", title: "The DOM II", lesson: "14-dom-2", problems: 4 },
+  { id: "lab-14", title: "The DOM II", lesson: "14-dom-2", problems: 3 },
   { id: "lab-15", title: "Events", lesson: "15-events", problems: 3 },
   { id: "lab-16", title: "Returns and Errors", lesson: "16-errors", problems: 3 },
   { id: "lab-17", title: "Functional Toolkit", lesson: "17-functional", problems: 3 },

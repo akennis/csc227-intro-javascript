@@ -5,8 +5,8 @@ export default {
   "title": "The DOM II",
   "lesson": "14-dom-2",
   "lessonTitle": "The DOM II: Building & Navigating the Tree",
-  "intro": "<p>Four problems on building and restructuring the page: creating elements from data, nesting them, walking the\n    tree, and re-rendering when the data changes. Build elements with <code>createElement</code> and <code>textContent</code>\n    — data may contain characters like <code>&lt;</code> that must stay text.</p>",
-  "points": 40,
+  "intro": "<p>Three problems on building the page from data: appending elements to a list, replacing a container's contents\n    with nested elements, and walking the tree to build a nested table of contents. Build elements with <code>createElement</code> and <code>textContent</code>\n    — data may contain characters like <code>&lt;</code> that must stay text.</p>",
+  "points": 30,
   "problems": [
     {
       "key": "simple",
@@ -77,34 +77,6 @@ export default {
       "html": "<ul id=\"toc\"></ul>\n<div id=\"article\">\n  <h3>Stray heading</h3>\n  <h2>Intro</h2><p>…</p>\n  <h2>Setup</h2>\n  <h3>Install</h3><p>…</p>\n  <h3>Configure</h3><p>…</p>\n  <h2>Usage</h2><p>…</p>\n  <h3>Advanced</h3>\n</div>",
       "hint": "<code>document.querySelectorAll(\"#article h2, #article h3\")</code> returns both kinds in document order. Keep\n        track of the current h2's <code>&lt;li&gt;</code> (and its nested <code>&lt;ul&gt;</code>, if any) as you loop.",
       "solution": "BQYNUUZeQgRTTwYMDQgxC05eGEMIaRISVEIEAFlTEQ4PRVkNEl4ABg5XXEMDDRZZNgkEAQAKWTRIKhdLEEZYTkhaFnlFQRgKBwMEVBMfAlFXdEUDH0kBAA9ETF8nVhEPFhcSUUJfGBZDBykITFhEQwNdD0hpEhJbSB5TTgYXEwkLEH4DU0NOQ1xHW0FReQ1TCQQYRRRBF1IGF0MPEgcWYFMNFQoTTE0HQhhCF1MLEl1RDQ4cTgYIBAIRSlwDVBEKMFdeUk4eHF8yCQ1ER0dMBEUKEA9XEl8fRlMOEhcVBQYISFZZUFFKGxJMJ0pTDVMGDgIWEA0aWENOQ1ZdVFgHFkMHSwIeAAVZE3QPFg5XXEMFSB9EUUxaZkVEDVZdCl0XV0pDbgUdWRYLFUxYREVYRQYLF3FdWVkPHVlIb0FMRUREEBFLG01GU1BjCx5IU1hcUUVGZUQTSlMYOBIXDUpTDQcKAkIEFF0TXwdbD1sbDCdKUw1TRUEPEBZfE18XPwoSDxdBA0gnU0VBTEVETgNDERYNRmFCT0pODR0QDQBebg1WEUNTQ0JeVk4PFwZYXmtMRUQNCxEGHxBXEl5LSltOBhcTCQsQYR8RQk5eElxCQQZaDQhvQUxFRA1WWAVTS1FHRV8PHVkgEANMWFkQVl8WHw8bEkwnSlMNU0VBTEUHWARDBh0XYUdVDVdTSRwGFAEACllYUhEWAkZXckEPHkgdEUlOEAgPXwppU0MSEhcNSlNOBhcTCQsQYR8fAgMTV1xTBQkGXwEADxg2EU9fCmlTQxISFw0XeQ1TRUFMRQdYBEMGHRdhR1UDCwNdFgsFRAkNBE07Q1NDEhIXXQYSThYBSkdebg1WEUMOaRISSidKU18WERQeC0RdGlAAFgcJOEo="
-    },
-    {
-      "key": "challenge",
-      "title": "Sortable table",
-      "points": 10,
-      "prompt": "The table's header cells name the columns with <code>data-key</code>. Using the given <code>data</code> array:\n        <ul>\n          <li><code>renderRows(rows)</code> — empty the <code>tbody</code> and add one <code>&lt;tr&gt;</code> per row object, with one\n          <code>&lt;td&gt;</code> per column <strong>in the order of the header cells</strong> (read the keys from the\n          <code>th</code>s' <code>data-key</code>, don't hard-code them).</li>\n          <li><code>sortBy(key)</code> — sort <code>data</code> by that column and re-render. Sorting the same column twice in a row\n          flips between ascending and descending; a new column starts ascending. Numbers sort numerically, strings with\n          <code>localeCompare</code>. The sorted column's <code>th</code> gets the class <code>asc</code> or <code>desc</code>; all\n          other <code>th</code>s have neither.</li>\n          <li>Clicking a header cell calls <code>sortBy</code> with its key (one listener on the header row is enough). Render the\n          rows once at start-up, unsorted.</li>\n        </ul>",
-      "starter": "const data = [\n  { name: \"Grace\", score: 88, year: 3 },\n  { name: \"Ada\", score: 95, year: 2 },\n  { name: \"Alan\", score: 72, year: 4 },\n  { name: \"Edsger\", score: 88, year: 1 },\n];\n\nfunction renderRows(rows) {\n\n}\n\nfunction sortBy(key) {\n\n}",
-      "checks": [
-        {
-          "label": "initial render",
-          "run": "return _t.el(\"#grades tbody\").innerHTML;"
-        },
-        {
-          "label": "click Name",
-          "run": "_t.$$(\"#grades th\")[0].click(); return [_t.$$(\"#grades tbody tr\").map(tr => tr.firstElementChild.textContent), _t.$$(\"#grades th\").map(th => th.className)];"
-        },
-        {
-          "label": "click Score twice",
-          "run": "const th = _t.$$(\"#grades th\")[1]; th.click(); const asc = _t.$$(\"#grades tbody tr td:nth-child(2)\").map(td => td.textContent); th.click(); return [asc, _t.$$(\"#grades tbody tr td:nth-child(2)\").map(td => td.textContent), _t.$$(\"#grades th\").map(th => th.className)];"
-        },
-        {
-          "label": "renderRows uses the header order",
-          "run": "const head = _t.el(\"#grades thead tr\"); head.prepend(head.lastElementChild); renderRows([{ name: \"Zed\", score: 1, year: 9 }]); return _t.el(\"#grades tbody\").innerHTML;"
-        }
-      ],
-      "html": "<style>th { cursor: pointer; } th.asc::after { content: \" ▲\"; } th.desc::after { content: \" ▼\"; }</style>\n<table id=\"grades\" border=\"1\">\n  <thead><tr><th data-key=\"name\">Name</th><th data-key=\"score\">Score</th><th data-key=\"year\">Year</th></tr></thead>\n  <tbody></tbody>\n</table>",
-      "hint": "Keep the current sort key and direction in variables outside the functions. After sorting, call\n        <code>renderRows(data)</code>, then update the classes on every <code>th</code>.",
-      "solution": "ABwNQUYXSQsHTFNYQTdvRA0NEQ0SDlcIFw8tAUwQAENARRdOGUMGSUMKChsNExZMAV9BX0UZAXwRQwhDXFNaSFBTDzIBAE5JRF4VXhEWWRILAgFKCkgSF1tMV0RQWjtDUxgSXFZAD0kNUSQNDQtGAVZCABwRVwgXGlhfDQoAAB5fRBlWTE95QxJJF0MLHkhJRUMpARdKE0NBX0NBUVhfD0kNS11NTBwBTAQLQ0JDTx49cFF5Jx8AFUwWC18CegYKQw8SWVgGHxZ5CQQYRQVeFVQNFwpcVRcQSgdfBgBaZm8CWBhSFxoMXBJUQgYGQB0uBBUWTARWSmlTQ0BXQ1gYHQ0oS09CAQtOA1wGHRccQ0JIGAp+FgkEDxELXzddD1tBEVVFTA4WXlMRCQkEAA0CWUFaPhxfVl1CB0VTWF9MEQwDElAXEhBXRhlGDwoESG8cZm8CWBhSFxoMXBJFSAQXSAE3DhsWTF8ZRhBaQ0k4Fw0JHEMAEUEYBwtJDxFeUwddUUJADx1ZXRQUCRcdfhNdBhAXXUAfD0kUXxIBBB9FEE8ZVRpRSgk4Fw0eEUIXHE8eABRBF1IGMAtbXlNfDx0FWl5rTEUHQhhCF1MIV0tEDVdTThwJFAELL0gPQktaWDgSF0sFAQ1bBg4CFhANBF4UUwxUEkVCHQAEUx5rTEVEDRVeDQAXEkZFDVdTSRwGFAEACllYUhEWAkZXckEPHkgdEUlOERYPXwppU0MSElFCGFMFEAoPHxFERhNIQxwFEllSVBlaDQhvQUxFRA1WUgwdEEYSQ0lKTg0XCgIZCAFDAh8AAQZTRlJoBhZAFgsVREcQSVQYWHlDEhIXDUoHSV0RBBQRJ0IYRQYdFxIPF18FBHYYABgxXm4NVhFDU0NGQBlMGgNIHQFJGAFNFnwRQ1NDTzgXDUpTWREKBRVLBV0GVA0XS0ZAHhZgUw0ObxxmbwJYGFIXGgxcEkRCGAdvCk0KCRxNDQ07Q1MCQVFSQw4aQxRFXEwOAVRWDF5OQ0FdRVkhFlRTWkFNBBdOE18HGg1VEg0NHgFYFl5rTEUXQgRFKBYaEg8XRg8KFnlFQQgEEExYQgwBFxoaVgFKEQRTWF9MHm4NVhFDEAxcQUMNElMQUwQ6BwAdcFoRGlNeElBsRg8KcEhvQUxFRE4ZXxAHQ1FfRw1XU1kKFQQDA0RVVgxeTkMQXEJACBZfUUVeTB1EAFZIQ0lDYUZFRAQUBQtMTwAKB0waVCAcDkJTRUhCIFkBDA8LTR0EXwppU0MSEkVIHgZfHUUAHwYBQxJYDRRDDRJUQBpTF1NIAgEVXydWER5aWDgSF18PHUkWFzMDEhcFElAXEkoJOBcNDBxfU00CAwsXWVZFC1MMVBJTQgkGQBYLFUIUEUgESDAWD1dRQ0IYMkEfTUNPAhZMElQQUxdaV1ZJSgdFUUxITB5uDVYRQwcLHFFbTBkAYRoWFUIRC0oRXQZbQVNBVA9GU1kbSwUNEQVeE0VNGAZLEgoQV1NGFhxBSkNETAVSBh0HW1xQBFF5DVNFQRgNSk4aUBAAL1tBQwMeHEoUCQRERwBIBVJBX0NGWhlJCwdMAAAVQg4BVFYMXk5DWVdODUxVDVIEEg8ACkkfXwRaWDgSF1BgDid5AQ4PEAlIGEVNAhZXQE5+Dx9IEBEOHk1GDhFDAhcGQRJDRQ8SSVMRE05MSkwSVSYFBlxGe0QZB0gdABNERwdBH1IIUU8SVxcQVFNWeUVBDwoKXgIRFxtDDxJSAx4SXxQAFUIGCEIFVBAHSxBGXw9DSCdTRQgKRUxZHhhDCGkSEhcNGRxfBycYRBEMAxJQFxIQV0YZRg8KBEhvQUwYblBfCml5EVdcU0gYIUIEFkkIBBBMXwo="
     }
   ]
 };
