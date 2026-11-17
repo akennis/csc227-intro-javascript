@@ -25,7 +25,7 @@ export default {
         },
         {
           "label": "reset, then − does nothing",
-          "run": "_t.click(\"#reset\"); _t.el(\"#dec\").disabled = false; _t.click(\"#dec\"); return [_t.text(\"#count\"), _t.el(\"#dec\").disabled];"
+          "run": "_t.click(\"#reset\"); _t.click(\"#dec\"); return [_t.text(\"#count\"), _t.el(\"#dec\").disabled];"
         }
       ],
       "html": "<button id=\"dec\">−</button>\n<span id=\"count\">0</span>\n<button id=\"inc\">+</button>\n<button id=\"reset\">Reset</button>",

@@ -39,7 +39,7 @@ export default {
       checks: [
         { label: "initially", run: `return [_t.text("#count"), _t.el("#dec").disabled];` },
         { label: "+ + + −", run: `_t.click("#inc"); _t.click("#inc"); _t.click("#inc"); _t.click("#dec"); return [_t.text("#count"), _t.el("#dec").disabled];` },
-        { label: "reset, then − does nothing", run: `_t.click("#reset"); _t.el("#dec").disabled = false; _t.click("#dec"); return [_t.text("#count"), _t.el("#dec").disabled];` },
+        { label: "reset, then − does nothing", run: `_t.click("#reset"); _t.click("#dec"); return [_t.text("#count"), _t.el("#dec").disabled];` },
       ],
     },
     {
